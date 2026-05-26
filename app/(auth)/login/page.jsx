@@ -1,3 +1,5 @@
+// Feature: Authentication - Login & Register Pages
+
 'use client';
 
 import { useState } from 'react';
@@ -34,7 +36,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <Image src="/LOGO.PNG.jpg" alt="ZniyerBuy" width={80} height={80} />
+          
           <h1 className="text-3xl font-extrabold mt-3 tracking-wide">
             <span className="text-white">ZNIYER</span>
             <span style={{ color: '#F5A623' }}>BUY</span>
