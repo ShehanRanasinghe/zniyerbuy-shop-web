@@ -1,0 +1,61 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const menuItems = [
+  { label: 'Dashboard', href: '/dashboard', icon: '📊' },
+  { label: 'Shop', href: '/shop', icon: '🏪' },
+  { label: 'Products', href: '/products', icon: '📦' },
+  { label: 'Deals', href: '/deals', icon: '🏷️' },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+
+  return (
+    <div className="h-screen w-64 flex flex-col fixed left-0 top-0" style={{ backgroundColor: '#0D1B2A' }}>
+      
+      {/* Logo */}
+      <div className="flex flex-col items-center py-8 border-b" style={{ borderColor: '#1E3448' }}>
+        <h1 className="text-2xl font-extrabold tracking-wide">
+          <span className="text-white">ZNIYER</span>
+          <span style={{ color: '#F5A623' }}>BUY</span>
+        </h1>
+        <p className="text-xs mt-1" style={{ color: '#00897B' }}>Shop Manager</p>
+      </div>
+
+      {/* Menu */}
+      <nav className="flex-1 px-4 py-6 space-y-2">
+        {menuItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition"
+              style={{
+                backgroundColor: isActive ? '#00897B' : 'transparent',
+                color: isActive ? '#ffffff' : '#8899AA',
+              }}
+            >
+              <span>{item.icon}</span>
+              <span className="font-medium">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Logout */}
+      <div className="px-4 py-6 border-t" style={{ borderColor: '#1E3448' }}>
+        <button
+          className="flex items-center gap-3 px-4 py-3 rounded-lg w-full transition hover:opacity-80"
+          style={{ backgroundColor: '#1E3448', color: '#8899AA' }}
+        >
+          <span>🚪</span>
+          <span className="font-medium">Logout</span>
+        </button>
+      </div>
+    </div>
+  );
+}
