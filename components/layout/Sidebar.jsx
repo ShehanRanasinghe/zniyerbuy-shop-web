@@ -2,21 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChartLine, faStore, faBox, faTags, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
 const menuItems = [
-  { label: 'Dashboard', href: '/dashboard', icon: '📊' },
-  { label: 'Shop', href: '/dashboard/shop', icon: '🏪' },
-  { label: 'Products', href: '/dashboard/products', icon: '📦' },
-  { label: 'Deals', href: '/dashboard/deals', icon: '🏷️' },
+  { label: 'Dashboard', href: '/dashboard', icon: faChartLine },
+  { label: 'Shop', href: '/dashboard/shop', icon: faStore },
+  { label: 'Products', href: '/dashboard/products', icon: faBox },
+  { label: 'Deals', href: '/dashboard/deals', icon: faTags },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside
-      className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-black border-r border-[#222]"
-    >
+    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-black border-r border-[#222] z-50 hidden lg:flex">
       <div className="flex flex-col items-center py-8 border-b border-[#222]">
         <h1 className="text-3xl font-extrabold">
           <span className="text-[#E84E0F]">ZNIYER</span>
@@ -36,22 +36,22 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-4 rounded-2xl transition-all ${
+              className={`flex items-center gap-3 px-4 py-4 rounded-2xl transition-all duration-200 ${
                 isActive
-                  ? 'bg-[#E84E0F] text-white'
-                  : 'text-gray-400 hover:bg-[#161616]'
-              }`}
-            >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
+                  ? 'bg-[#E84E0F] text-white shadow-lg'
+                  : 'text-gray-400 hover:bg-[#161616] hover:text-white'
+              }`}>
+              <FontAwesomeIcon icon={item.icon} className="text-lg" />
+              <span className="font-medium">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
       <div className="p-4 border-t border-[#222]">
-        <button className="w-full bg-[#111] text-white rounded-2xl py-4">
-          🚪 Logout
+        <button className="w-full bg-[#111] text-white rounded-2xl py-4 hover:bg-[#161616] transition flex items-center justify-center gap-2">
+          <FontAwesomeIcon icon={faSignOutAlt} />
+          <span>Logout</span>
         </button>
       </div>
     </aside>
