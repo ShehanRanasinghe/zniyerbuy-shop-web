@@ -21,10 +21,38 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      // Get Firebase ID token
+      const idToken = await firebaseUser.getIdToken();
+      
+      // Verify user exists in backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('User not found in system');
+      }
+      
+      const data = await response.json();
+      
+      // Check if user has shop_owner or admin role
+      if (data.data.role !== 'shop_owner' && data.data.role !== 'admin') {
+        throw new Error('Access denied. Shop owner account required.');
+      }
+      
+      // Store token in localStorage for API calls
+      localStorage.setItem('token', idToken);
+      
       router.push('/dashboard');
-    } catch {
-      setError('Invalid email or password');
+    } catch (err) {
+      setError(err.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -36,7 +64,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" />
+          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" loading="eager" priority />
           <h1 className="text-2xl sm:text-3xl font-extrabold mt-3 tracking-wide">
             <span style={{ color: '#E84E0F' }}>ZNIYER</span>
             <span style={{ color: '#2A7F8A' }}> BuY</span>

@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBox, faTags, faEye, faHeart, faStar, faChartLine, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { analyticsAPI } from '@/lib/api';
@@ -29,7 +32,9 @@ interface Product {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState<Stats>({
     totalShops: 0,
     totalProducts: 0,
@@ -45,8 +50,23 @@ export default function DashboardPage() {
   const [topProducts, setTopProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    // Check authentication status
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push('/auth/login');
+      } else {
+        setAuthChecked(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  useEffect(() => {
+    if (authChecked) {
+      fetchDashboardData();
+    }
+  }, [authChecked]);
 
   const fetchDashboardData = async () => {
     try {
@@ -76,7 +96,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) {
+  if (!authChecked || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <FontAwesomeIcon icon={faSpinner} className="text-4xl animate-spin" style={{ color: '#E84E0F' }} />

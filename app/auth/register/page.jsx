@@ -7,29 +7,67 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEnvelope, faLock, faSpinner, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faLock, faSpinner, faCheckCircle, faUser } from '@fortawesome/free-solid-svg-icons';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+    
     if (password !== confirm) {
       setError('Passwords do not match');
       return;
     }
+    
+    if (!fullName.trim()) {
+      setError('Full name is required');
+      return;
+    }
+    
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      // Create Firebase user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      // Get Firebase ID token
+      const idToken = await firebaseUser.getIdToken();
+      
+      // Register user in backend with seller role (shop_owner in database)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          firebase_uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          full_name: fullName,
+          role: 'shop_owner'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+      
+      // Store token in localStorage for API calls
+      localStorage.setItem('token', idToken);
+      
       router.push('/dashboard');
-    } catch {
-      setError('Registration failed. Try again.');
+    } catch (err) {
+      setError(err.message || 'Registration failed. Try again.');
     } finally {
       setLoading(false);
     }
@@ -41,7 +79,7 @@ export default function RegisterPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" />
+          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" loading="eager" priority />
           <h1 className="text-2xl sm:text-3xl font-extrabold mt-3 tracking-wide">
             <span style={{ color: '#E84E0F' }}>ZNIYER</span>
             <span style={{ color: '#2A7F8A' }}> BuY</span>
@@ -64,6 +102,22 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2 flex items-center gap-2" style={{ color: '#2A7F8A' }}>
+                <FontAwesomeIcon icon={faUser} />
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition"
+                style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A7F8A' }}
+                placeholder="John Doe"
+                required
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2" style={{ color: '#2A7F8A' }}>
                 <FontAwesomeIcon icon={faEnvelope} />
