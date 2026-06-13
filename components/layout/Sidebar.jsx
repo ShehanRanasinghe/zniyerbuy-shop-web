@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartLine, faStore, faBox, faTags, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import toast from 'react-hot-toast';
 
 const menuItems = [
   { label: 'Dashboard', href: '/dashboard', icon: faChartLine },
@@ -14,6 +17,20 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('token');
+      localStorage.removeItem('shopId');
+      toast.success('Logged out successfully');
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-black border-r border-[#222] z-50 hidden lg:flex">
@@ -49,7 +66,9 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-[#222]">
-        <button className="w-full bg-[#111] text-white rounded-2xl py-4 hover:bg-[#161616] transition flex items-center justify-center gap-2">
+        <button 
+          onClick={handleLogout}
+          className="w-full bg-[#111] text-white rounded-2xl py-4 hover:bg-[#161616] transition flex items-center justify-center gap-2">
           <FontAwesomeIcon icon={faSignOutAlt} />
           <span>Logout</span>
         </button>
