@@ -6,6 +6,8 @@ import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope, faLock, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,7 +23,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/dashboard');
-    } catch (err) {
+    } catch {
       setError('Invalid email or password');
     } finally {
       setLoading(false);
@@ -29,23 +31,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0A' }}>
-      <div className="w-full max-w-md px-6">
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#0A0A0A' }}>
+      <div className="w-full max-w-md">
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} />
-          <h1 className="text-3xl font-extrabold mt-3 tracking-wide">
+          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold mt-3 tracking-wide">
             <span style={{ color: '#E84E0F' }}>ZNIYER</span>
             <span style={{ color: '#2A7F8A' }}> BuY</span>
           </h1>
-          <p className="text-xs mt-1 tracking-widest" style={{ color: '#4A4A4A' }}>
+          <p className="text-xs mt-1 tracking-widest text-center" style={{ color: '#4A4A4A' }}>
             BRINGING THE CART TO YOUR DOORSTEP
           </p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl p-8 shadow-2xl" style={{ backgroundColor: '#111111', border: '1px solid #222222' }}>
+        <div className="rounded-2xl p-6 sm:p-8 shadow-2xl" style={{ backgroundColor: '#111111', border: '1px solid #222222' }}>
           <h2 className="text-xl font-bold text-white text-center mb-6">
             Shop Owner Login
           </h2>
@@ -58,14 +60,15 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#2A7F8A' }}>
+              <label className="block text-sm font-medium mb-2 flex items-center gap-2" style={{ color: '#2A7F8A' }}>
+                <FontAwesomeIcon icon={faEnvelope} />
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg px-4 py-3 text-white focus:outline-none"
+                className="w-full rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition"
                 style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A7F8A' }}
                 placeholder="you@example.com"
                 required
@@ -73,14 +76,15 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#2A7F8A' }}>
+              <label className="block text-sm font-medium mb-2 flex items-center gap-2" style={{ color: '#2A7F8A' }}>
+                <FontAwesomeIcon icon={faLock} />
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg px-4 py-3 text-white focus:outline-none"
+                className="w-full rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition"
                 style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A7F8A' }}
                 placeholder="••••••••"
                 required
@@ -90,16 +94,16 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-lg font-bold text-white transition hover:opacity-90 disabled:opacity-50 mt-2"
-              style={{ backgroundColor: '#E84E0F' }}
-            >
+              className="w-full py-3 rounded-lg font-bold text-white transition hover:opacity-90 disabled:opacity-50 mt-6 flex items-center justify-center gap-2"
+              style={{ backgroundColor: '#E84E0F' }}>
+              {loading && <FontAwesomeIcon icon={faSpinner} className="animate-spin" />}
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
 
-          <p className="text-center text-sm mt-5" style={{ color: '#555555' }}>
-            Don't have an account?{' '}
-            <Link href="/register" className="font-semibold hover:underline" style={{ color: '#2A7F8A' }}>
+          <p className="text-center text-sm mt-6" style={{ color: '#555555' }}>
+            Don&apos;t have an account?{' '}
+            <Link href="/auth/register" className="font-semibold hover:underline transition" style={{ color: '#2A7F8A' }}>
               Register
             </Link>
           </p>
