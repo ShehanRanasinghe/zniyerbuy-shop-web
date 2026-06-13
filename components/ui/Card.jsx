@@ -3,10 +3,9 @@
 export function Card({ children, border = '#3D3530', ...props }) {
   return (
     <div
-      className="rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200"
+      className="rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300"
       style={{ backgroundColor: '#2D2620', border: `1px solid ${border}` }}
-      {...props}
-    >
+      {...props}>
       {children}
     </div>
   );
