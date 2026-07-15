@@ -1,8 +1,18 @@
+// Button — Reusable button components with consistent dark-theme styling
+// Three variants: Primary (orange), Secondary (configurable color), Ghost (dark)
+// All buttons support icon + children content and spread additional props
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { ButtonHTMLAttributes } from 'react';
 
-// Button component with consistent styling
+// Props shared by all button variants
+interface ButtonBaseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  icon?: IconDefinition;
+}
 
-export function PrimaryButton({ children, onClick, icon, ...props }) {
+// Primary button — main call-to-action in orange brand color
+export function PrimaryButton({ children, onClick, icon, ...props }: ButtonBaseProps) {
   return (
     <button
       onClick={onClick}
@@ -15,7 +25,8 @@ export function PrimaryButton({ children, onClick, icon, ...props }) {
   );
 }
 
-export function SecondaryButton({ children, onClick, color = '#D4834D', icon, ...props }) {
+// Secondary button — alternate action with configurable color
+export function SecondaryButton({ children, onClick, color = '#D4834D', icon, ...props }: ButtonBaseProps & { color?: string }) {
   return (
     <button
       onClick={onClick}
@@ -28,7 +39,8 @@ export function SecondaryButton({ children, onClick, color = '#D4834D', icon, ..
   );
 }
 
-export function GhostButton({ children, onClick, icon, ...props }) {
+// Ghost button — subtle dark background for cancel/secondary actions
+export function GhostButton({ children, onClick, icon, ...props }: ButtonBaseProps) {
   return (
     <button
       onClick={onClick}
