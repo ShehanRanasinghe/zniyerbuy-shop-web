@@ -1,8 +1,26 @@
+// Input — Reusable form input components: text Input, Textarea, and Select
+// All support label, icon, required indicator, and spread of HTML attributes
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes } from 'react';
 
-// Input component with consistent styling
+// Option type for the Select component
+interface SelectOption {
+  value: string;
+  label: string;
+}
 
-export function Input({ label, name, type = 'text', borderColor = '#D4834D', required = false, icon, ...props }) {
+// Base input — labeled text field with optional icon
+export function Input({
+  label,
+  name,
+  type = 'text',
+  borderColor = '#D4834D',
+  required = false,
+  icon,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { label?: string; borderColor?: string; icon?: IconDefinition }) {
   return (
     <div>
       {label && (
@@ -28,7 +46,16 @@ export function Input({ label, name, type = 'text', borderColor = '#D4834D', req
   );
 }
 
-export function Textarea({ label, name, borderColor = '#D4834D', required = false, rows = 4, icon, ...props }) {
+// Multi-line textarea with same label pattern as Input
+export function Textarea({
+  label,
+  name,
+  borderColor = '#D4834D',
+  required = false,
+  rows = 4,
+  icon,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; borderColor?: string; icon?: IconDefinition }) {
   return (
     <div>
       {label && (
@@ -54,7 +81,16 @@ export function Textarea({ label, name, borderColor = '#D4834D', required = fals
   );
 }
 
-export function Select({ label, name, options, borderColor = '#D4834D', required = false, icon, ...props }) {
+// Dropdown select with typed options array
+export function Select({
+  label,
+  name,
+  options,
+  borderColor = '#D4834D',
+  required = false,
+  icon,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: SelectOption[]; borderColor?: string; icon?: IconDefinition }) {
   return (
     <div>
       {label && (
