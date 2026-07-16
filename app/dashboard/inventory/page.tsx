@@ -104,7 +104,7 @@ export default function InventoryPage() {
           </p>
         </div>
         <button
-          onClick={() => router.push('/dashboard/products/new')}
+          onClick={() => router.push('/dashboard/inventory/new')}
           className="px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90 flex items-center gap-2"
           style={{ backgroundColor: '#E84E0F' }}>
           <FontAwesomeIcon icon={faPlus} />
@@ -240,7 +240,7 @@ export default function InventoryPage() {
               </p>
               {activeTab === 'all' && (
                 <button
-                  onClick={() => router.push('/dashboard/products/new')}
+                  onClick={() => router.push('/dashboard/inventory/new')}
                   className="mt-4 px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90"
                   style={{ backgroundColor: '#E84E0F' }}>
                   <FontAwesomeIcon icon={faPlus} className="mr-2" />
