@@ -13,7 +13,7 @@ import {
   faShoppingCart,
   faUser,
   faSignOutAlt,
-  faStore,
+  faTag,
   faTags,
   faBoxOpen,
   faPercentage,
@@ -28,10 +28,16 @@ import toast from 'react-hot-toast';
 // Navigation menu items — each maps to a dashboard route
 const menuItems: { label: string; href: string; icon: IconDefinition }[] = [
   { label: 'Dashboard', href: '/dashboard', icon: faChartLine },
+  { label: 'Add Product', href: '/dashboard/inventory/new', icon: faBoxOpen },
   { label: 'Inventory', href: '/dashboard/inventory', icon: faWarehouse },
+  { label: 'Add Promotions', href: '/dashboard/discounts/promotions/new', icon: faTag },
+  { label: 'Add Deals', href: '/dashboard/discounts/deals/new', icon: faTags },
+  { label: 'Discounts', href: '/dashboard/discounts', icon: faPercentage },
   { label: 'Orders', href: '/dashboard/orders', icon: faShoppingCart },
+  { label: 'Reviews', href: '/dashboard/reviews', icon: faComments },
   { label: 'Analytics', href: '/dashboard/analytics', icon: faChartLine },
   { label: 'Profile', href: '/dashboard/profile', icon: faUser },
+  { label: 'Store Location', href: '/dashboard/map', icon: faMapMarkedAlt },
 ];
 
 export default function Sidebar() {
