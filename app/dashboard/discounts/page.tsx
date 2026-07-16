@@ -92,7 +92,7 @@ export default function DiscountsPage() {
         {/* Dynamic Create Button based on active tab */}
         {activeTab === 'promotions' ? (
           <button
-            onClick={() => router.push('/dashboard/promotions/new')}
+            onClick={() => router.push('/dashboard/discounts/promotions/new')}
             className="px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90 flex items-center gap-2"
             style={{ backgroundColor: '#E84E0F' }}>
             <FontAwesomeIcon icon={faPlus} />
@@ -100,7 +100,7 @@ export default function DiscountsPage() {
           </button>
         ) : (
           <button
-            onClick={() => router.push('/dashboard/deals/new')}
+            onClick={() => router.push('/dashboard/discounts/deals/new')}
             className="px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90 flex items-center gap-2"
             style={{ backgroundColor: '#E84E0F' }}>
             <FontAwesomeIcon icon={faPlus} />
@@ -189,7 +189,7 @@ export default function DiscountsPage() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => router.push(`/dashboard/deals/${deal.id}/edit`)}
+                    onClick={() => router.push(`/dashboard/discounts/deals/${deal.id}/edit`)}
                     className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition hover:opacity-80"
                     style={{ backgroundColor: '#2A7F8A' }}>
                     <FontAwesomeIcon icon={faEdit} className="mr-2" />
@@ -213,7 +213,7 @@ export default function DiscountsPage() {
             </p>
             {!searchQuery && (
               <button
-                onClick={() => router.push(activeTab === 'promotions' ? '/dashboard/promotions/new' : '/dashboard/deals/new')}
+                onClick={() => router.push(activeTab === 'promotions' ? '/dashboard/discounts/promotions/new' : '/dashboard/discounts/deals/new')}
                 className="px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90"
                 style={{ backgroundColor: '#E84E0F' }}>
                 <FontAwesomeIcon icon={faPlus} className="mr-2" />
