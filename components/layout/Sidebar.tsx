@@ -61,7 +61,10 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-black border-r border-[#222] z-50 hidden lg:flex">
       {/* Brand logo and app name */}
-      <div className="flex flex-col items-center py-8 border-b border-[#222]">
+      <div className="flex flex-col items-center py-5 border-b border-[#222]">
+        <div className="w-full flex justify-center">
+          <img src="/logo.png" alt="ZNIYER BuY" className="h-15 w-24" />
+        </div>
         <h1 className="text-3xl font-extrabold">
           <span className="text-[#E84E0F]">ZNIYER</span>
           <span className="text-[#2A7F8A]"> BuY</span>
