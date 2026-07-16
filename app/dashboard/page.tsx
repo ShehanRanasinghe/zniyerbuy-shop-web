@@ -265,7 +265,7 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-bold text-white mb-6">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <button
-            onClick={() => router.push('/dashboard/products/new')}
+            onClick={() => router.push('/dashboard/inventory/new')}
             className="p-6 rounded-xl text-center hover:opacity-80 transition flex flex-col items-center gap-3"
             style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
             <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FEF0EB' }}>
