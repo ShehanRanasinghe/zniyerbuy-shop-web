@@ -6,7 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBox, faTags, faShoppingCart, faDollarSign, faExclamationTriangle, faSpinner, faPlus, faWarehouse, faPercentage, faComments, faMapMarkedAlt, faStore, faUser, faChartLine, faStar } from '@fortawesome/free-solid-svg-icons';
-import { analyticsAPI, shopAPI, productAPI } from '@/lib/api';
+import { analyticsAPI, shopAPI, productAPI, ordersAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface Stats {
@@ -38,6 +38,12 @@ interface ShopInfo {
   category: string;
 }
 
+interface Order {
+  id: string;
+  total_amount: number;
+  status: string;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -58,6 +64,8 @@ export default function DashboardPage() {
   });
   const [topProducts, setTopProducts] = useState<Product[]>([]);
   const [lowStockCount, setLowStockCount] = useState(0);
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [revenue, setRevenue] = useState(0);
 
   useEffect(() => {
     // Check authentication status
@@ -100,23 +108,26 @@ export default function DashboardPage() {
         }
       }
 
-      // Fetch analytics data
-      const [statsRes, performanceRes, topProductsRes] = await Promise.all([
+      // Fetch analytics data. Uses allSettled (not all) so that if one call
+      // fails, it doesn't wipe out the other two — this was exactly why the
+      // dashboard previously showed no data at all whenever any single
+      // analytics endpoint errored.
+      const [statsResult, performanceResult, topProductsResult] = await Promise.allSettled([
         analyticsAPI.getSellerStats(),
         analyticsAPI.getSellerPerformance(),
         analyticsAPI.getTopProducts(),
       ]);
 
-      if (statsRes.data.success) {
-        setStats(statsRes.data.stats);
+      if (statsResult.status === 'fulfilled' && statsResult.value.data.success) {
+        setStats(statsResult.value.data.stats);
       }
 
-      if (performanceRes.data.success) {
-        setPerformance(performanceRes.data.stats);
+      if (performanceResult.status === 'fulfilled' && performanceResult.value.data.success) {
+        setPerformance(performanceResult.value.data.stats);
       }
 
-      if (topProductsRes.data.success) {
-        setTopProducts(topProductsRes.data.data.slice(0, 5));
+      if (topProductsResult.status === 'fulfilled' && topProductsResult.value.data.success) {
+        setTopProducts(topProductsResult.value.data.data.slice(0, 5));
       }
 
       // Fetch products to calculate low stock count
@@ -129,6 +140,21 @@ export default function DashboardPage() {
         }
       } catch {
         // Non-critical — ignore if products fail to load
+      }
+
+      // Fetch orders to calculate orders count and revenue
+      try {
+        const ordersRes = await ordersAPI.getOrders({});
+        if (ordersRes.data.success) {
+          const orders: Order[] = ordersRes.data.data || [];
+          setOrdersCount(orders.length);
+          const totalRevenue = orders
+            .filter((order) => order.status !== 'cancelled')
+            .reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
+          setRevenue(totalRevenue);
+        }
+      } catch {
+        // Non-critical — ignore if orders fail to load
       }
 
     } catch (err: unknown) {
@@ -146,8 +172,8 @@ export default function DashboardPage() {
   const getFilteredStats = () => ({
     totalProducts: stats.totalProducts,
     lowStockProducts: lowStockCount,
-    ordersCount: 0,
-    revenue: 0,
+    ordersCount,
+    revenue,
   });
 
   if (!authChecked || loading) {
