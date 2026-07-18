@@ -24,7 +24,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       />
 
       {/* Main content — offset by sidebar width on large screens */}
-      <main className="lg:ml-64 min-h-screen p-4 sm:p-6 lg:p-8">
+      <main className="lg:ml-70 min-h-screen p-4 sm:p-6 lg:p-8">
         {children}
       </main>
     </div>
