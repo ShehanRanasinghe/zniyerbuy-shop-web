@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { productAPI, dealAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 const OCCASION_TYPES = [
   'New Year',
@@ -29,6 +30,10 @@ const OCCASION_TYPES = [
 
 interface Product {
   id: string;
+  shop_id?: string;
+  shops?: {
+    id?: string;
+  };
   name: string;
   price: number;
   image_url?: string;
@@ -46,6 +51,7 @@ export default function NewPromotionPage() {
     title: '',
     occasion_type: '',
     product_id: '',
+    shop_id: '',
     price: '',
     discount_percentage: '',
     discounted_price: '',
@@ -95,6 +101,7 @@ export default function NewPromotionPage() {
     setFormData(prev => ({
       ...prev,
       product_id: product.id,
+      shop_id: product.shop_id || product.shops?.id || '',
       price: product.price.toString()
     }));
     setShowProductSearch(false);
@@ -115,16 +122,33 @@ export default function NewPromotionPage() {
       return;
     }
 
+    let resolvedShopId = selectedProduct?.shop_id || selectedProduct?.shops?.id || formData.shop_id;
+    if (!resolvedShopId && selectedProduct) {
+      const productResponse = await productAPI.getProduct(selectedProduct.id);
+      if (productResponse.data?.success && productResponse.data?.data) {
+        resolvedShopId = productResponse.data.data.shop_id || productResponse.data.data.shops?.id || resolvedShopId;
+      }
+    }
+
+    if (!resolvedShopId) {
+      toast.error('Unable to resolve shop for the selected product');
+      return;
+    }
+
     try {
       setLoading(true);
       
       const promotionData = {
         title: formData.title,
         description: `${formData.occasion_type} promotion`,
+        discount_type: 'percentage',
         discount_percentage: parseFloat(formData.discount_percentage),
+        price: parseFloat(formData.price) || null,
+        discounted_price: formData.discounted_price ? parseFloat(formData.discounted_price) : null,
         start_date: formData.start_date,
         end_date: formData.end_date,
         product_id: formData.product_id,
+        shop_id: resolvedShopId,
         occasion_type: formData.occasion_type,
       };
 
@@ -136,7 +160,11 @@ export default function NewPromotionPage() {
       }
     } catch (error) {
       console.error('Error creating promotion:', error);
-      toast.error('Failed to create promotion');
+      const message =
+        (axios.isAxiosError(error) && error.response?.data?.error) ||
+        (axios.isAxiosError(error) && error.response?.data?.errors?.[0]?.msg) ||
+        'Failed to create promotion';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
