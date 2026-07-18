@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 interface Product {
   id: string;
   name: string;
-  current_price: number;
+  price: number;
   image_url?: string;
 }
 
@@ -101,7 +101,7 @@ export default function NewDealPage() {
     setFormData(prev => ({
       ...prev,
       product_id: product.id,
-      original_price: product.current_price.toString(),
+      original_price: product.price.toString(),
       image_url: product.image_url || '',
     }));
     setSearchTerm(product.name);
@@ -280,7 +280,7 @@ export default function NewDealPage() {
                         <div className="flex-1">
                           <p className="text-white text-sm">{product.name}</p>
                           <p className="text-xs" style={{ color: '#888888' }}>
-                            LKR {product.current_price.toFixed(2)}
+                            LKR {product.price.toFixed(2)}
                           </p>
                         </div>
                       </div>

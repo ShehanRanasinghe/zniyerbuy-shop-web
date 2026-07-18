@@ -64,11 +64,15 @@ export default function DiscountsPage() {
     }
   };
 
-  // Filter deals based on search query
+  // Filter deals by active tab (promotion vs deal) and search query.
+  // Previously this only filtered by search, so both tabs showed everything.
   const getFilteredDeals = () => {
-    if (!searchQuery.trim()) return deals;
-    
-    return deals.filter(deal =>
+    const tabKind = activeTab === 'promotions' ? 'promotion' : 'deal';
+    const byTab = deals.filter(deal => (deal.discount_kind || 'deal') === tabKind);
+
+    if (!searchQuery.trim()) return byTab;
+
+    return byTab.filter(deal =>
       deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       deal.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
