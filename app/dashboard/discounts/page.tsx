@@ -179,9 +179,13 @@ export default function DiscountsPage() {
                 style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
                 <div className="flex justify-between items-start mb-4">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FEF0EB' }}>
-                    <span className="text-2xl font-bold" style={{ color: '#E84E0F' }}>
-                      {deal.discount_percentage}%
-                    </span>
+                    {deal.discount_kind === 'deal' ? (
+                      <FontAwesomeIcon icon={faTags} className="text-2xl" style={{ color: '#E84E0F' }} />
+                    ) : (
+                      <span className="text-2xl font-bold" style={{ color: '#E84E0F' }}>
+                        {deal.discount_percentage}%
+                      </span>
+                    )}
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold ${

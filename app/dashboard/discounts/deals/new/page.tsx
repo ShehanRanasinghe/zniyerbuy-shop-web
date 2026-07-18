@@ -1,6 +1,9 @@
 // New Deal Page — Allows shop owners to create a promotional deal
-// Employs client-side calculations to dynamically compute discount prices
-// Types are strictly defined to avoid runtime bugs
+// Deals are condition-based offers (e.g. "Buy 1 Get 1 Free", "Buy 2 Get 1 at 50% off")
+// rather than a flat price discount like Promotions. The exact condition varies per
+// deal, so it's captured as free text (Title + Description) instead of a rigid
+// template — this keeps the form flexible for whatever offer the shop owner is running.
+// Category-based deals (vs. single product) are a planned future addition.
 
 'use client';
 
@@ -11,6 +14,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { dealAPI, productAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 interface Product {
   id: string;
@@ -24,10 +28,6 @@ interface FormData {
   product_id: string;
   title: string;
   description: string;
-  discount_type: 'percentage' | 'fixed';
-  discount_value: string;
-  original_price: string;
-  deal_price: string;
   image_url: string;
   start_date: string;
   end_date: string;
@@ -46,10 +46,6 @@ export default function NewDealPage() {
     product_id: '',
     title: '',
     description: '',
-    discount_type: 'percentage',
-    discount_value: '',
-    original_price: '',
-    deal_price: '',
     image_url: '',
     start_date: new Date().toISOString().split('T')[0], // Auto-set to today
     end_date: '',
@@ -101,53 +97,24 @@ export default function NewDealPage() {
     setFormData(prev => ({
       ...prev,
       product_id: product.id,
-      original_price: product.price.toString(),
       image_url: product.image_url || '',
     }));
     setSearchTerm(product.name);
     setShowDropdown(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => {
-      const updated = {
-        ...prev,
-        [name]: value
-      };
-
-      // Auto-calculate deal price when relevant fields change
-      if ((name === 'discount_value' || name === 'original_price' || name === 'discount_type') && updated.original_price) {
-        calculateDealPrice(updated);
-      }
-
-      return updated;
-    });
-  };
-
-  const calculateDealPrice = (data: FormData) => {
-    const originalPrice = parseFloat(data.original_price);
-    const discountValue = parseFloat(data.discount_value);
-
-    if (isNaN(originalPrice) || isNaN(discountValue)) return;
-
-    let dealPrice = 0;
-    if (data.discount_type === 'percentage') {
-      dealPrice = originalPrice - (originalPrice * discountValue / 100);
-    } else {
-      dealPrice = originalPrice - discountValue;
-    }
-
     setFormData(prev => ({
       ...prev,
-      deal_price: Math.max(0, dealPrice).toFixed(2)
+      [name]: value
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.shop_id || !formData.title || !formData.discount_value || !formData.original_price) {
+    if (!formData.shop_id || !formData.title || !formData.description || !formData.product_id) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -159,11 +126,19 @@ export default function NewDealPage() {
 
     try {
       setLoading(true);
+
+      // Deals are condition-based (e.g. BOGO), not a price discount, so no
+      // discount_type/discount_value/price fields are sent — the condition
+      // lives in title/description. discount_kind defaults to 'deal' on the
+      // backend whenever occasion_type is absent.
       const dealData = {
-        ...formData,
-        discount_value: parseFloat(formData.discount_value),
-        original_price: parseFloat(formData.original_price),
-        deal_price: parseFloat(formData.deal_price),
+        shop_id: formData.shop_id,
+        product_id: formData.product_id,
+        title: formData.title,
+        description: formData.description,
+        image_url: formData.image_url || null,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
       };
 
       const response = await dealAPI.createDeal(dealData);
@@ -172,9 +147,13 @@ export default function NewDealPage() {
         toast.success('Deal created successfully!');
         router.push('/dashboard/discounts');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating deal:', error);
-      toast.error(error.response?.data?.error || 'Failed to create deal');
+      const message =
+        (axios.isAxiosError(error) && error.response?.data?.error) ||
+        (axios.isAxiosError(error) && error.response?.data?.errors?.[0]?.msg) ||
+        'Failed to create deal';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -192,7 +171,7 @@ export default function NewDealPage() {
           Create New Deal
         </h1>
         <p className="mt-1 text-sm sm:text-base" style={{ color: "#888888" }}>
-          Add a new promotional deal
+          Add a condition-based deal, e.g. &quot;Buy 1 Get 1 Free&quot; or &quot;Buy 2 Get 1 at 50% Off&quot;
         </p>
       </div>
 
@@ -201,9 +180,9 @@ export default function NewDealPage() {
           {/* Deal Info Section */}
           <div>
             <h2 className="text-lg font-semibold text-white mb-4 pb-2" style={{ borderBottom: '1px solid #333333' }}>
-              Deal Info Section
+              Deal Info
             </h2>
-            
+
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium mb-2 text-white">
@@ -216,13 +195,15 @@ export default function NewDealPage() {
                   onChange={handleChange}
                   className="w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2"
                   style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
-                  placeholder="e.g., Summer Sale 50% Off"
+                  placeholder="e.g., Buy 1 Get 1 Free"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">Description</label>
+                <label className="block text-sm font-medium mb-2 text-white">
+                  Deal Condition <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   name="description"
                   value={formData.description}
@@ -230,8 +211,12 @@ export default function NewDealPage() {
                   rows={4}
                   className="w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2 resize-none"
                   style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
-                  placeholder="Describe your deal..."
+                  placeholder="Describe the deal condition in your own words, e.g. 'Buy 1 Get 1 Free' or 'Buy 2, get the 3rd at 50% off'"
+                  required
                 />
+                <p className="text-xs mt-1" style={{ color: '#666666' }}>
+                  Deals vary by condition, so describe it freely rather than picking from a fixed template
+                </p>
               </div>
 
               <div className="relative">
@@ -249,15 +234,15 @@ export default function NewDealPage() {
                     placeholder="Search and select a product..."
                     required={!formData.product_id}
                   />
-                  <FontAwesomeIcon 
-                    icon={loadingProducts ? faSpinner : faSearch} 
+                  <FontAwesomeIcon
+                    icon={loadingProducts ? faSpinner : faSearch}
                     className={`absolute right-4 top-1/2 transform -translate-y-1/2 ${loadingProducts ? 'animate-spin' : ''}`}
                     style={{ color: '#666666' }}
                   />
                 </div>
-                
+
                 {showDropdown && filteredProducts.length > 0 && (
-                  <div 
+                  <div
                     className="absolute z-10 w-full mt-2 rounded-lg overflow-hidden shadow-lg max-h-60 overflow-y-auto"
                     style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
                   >
@@ -271,8 +256,8 @@ export default function NewDealPage() {
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1A1A1A'}
                       >
                         {product.image_url && (
-                          <img 
-                            src={product.image_url} 
+                          <img
+                            src={product.image_url}
                             alt={product.name}
                             className="w-10 h-10 object-cover rounded"
                           />
@@ -287,9 +272,9 @@ export default function NewDealPage() {
                     ))}
                   </div>
                 )}
-                
+
                 {showDropdown && filteredProducts.length === 0 && searchTerm && (
-                  <div 
+                  <div
                     className="absolute z-10 w-full mt-2 rounded-lg p-4 text-center"
                     style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
                   >
