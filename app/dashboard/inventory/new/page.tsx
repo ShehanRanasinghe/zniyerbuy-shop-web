@@ -85,8 +85,7 @@ interface FormData {
   shop_id: string;
   name: string;
   description: string;
-  original_price: string;
-  current_price: string;
+  price: string;
   unit: string;
   stock_quantity: string;
   image_url: string;
@@ -102,8 +101,7 @@ export default function NewProductPage() {
     shop_id: '',
     name: '',
     description: '',
-    original_price: '',
-    current_price: '',
+    price: '',
     unit: 'piece',
     stock_quantity: '',
     image_url: '',
@@ -178,7 +176,7 @@ export default function NewProductPage() {
       return;
     }
 
-    if (!formData.name || !formData.original_price || !formData.stock_quantity) {
+    if (!formData.name || !formData.price || !formData.stock_quantity) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -187,8 +185,7 @@ export default function NewProductPage() {
       setLoading(true);
       const productData = {
         ...formData,
-        original_price: parseFloat(formData.original_price),
-        current_price: formData.current_price ? parseFloat(formData.current_price) : parseFloat(formData.original_price),
+        price: parseFloat(formData.price),
         stock_quantity: parseInt(formData.stock_quantity),
       };
 
@@ -375,8 +372,8 @@ export default function NewProductPage() {
                   </label>
                   <input
                     type="number"
-                    name="original_price"
-                    value={formData.original_price}
+                    name="price"
+                    value={formData.price}
                     onChange={handleChange}
                     step="0.01"
                     min="0"
