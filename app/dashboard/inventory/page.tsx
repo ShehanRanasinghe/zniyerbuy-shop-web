@@ -10,7 +10,8 @@ import toast from 'react-hot-toast';
 interface Product {
   id: string;
   name: string;
-  price: number;
+  current_price: number;
+  original_price?: number;
   stock_quantity: number;
   category: string;
   image_url?: string;
@@ -197,7 +198,7 @@ export default function InventoryPage() {
                   
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-lg font-bold" style={{ color: '#E84E0F' }}>
-                      Rs. {product.price.toLocaleString()}
+                      Rs. {(product.current_price ?? product.original_price ?? 0).toLocaleString()}
                     </span>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
