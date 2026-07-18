@@ -173,6 +173,11 @@ export default function NewProductPage() {
       return;
     }
 
+    if (!formData.category) {
+      toast.error('Please select a category');
+      return;
+    }
+
     if (!formData.name || !formData.original_price || !formData.stock_quantity) {
       toast.error('Please fill in all required fields');
       return;
