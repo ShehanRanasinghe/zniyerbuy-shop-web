@@ -10,8 +10,7 @@ import toast from 'react-hot-toast';
 interface Product {
   id: string;
   name: string;
-  current_price: number;
-  original_price?: number;
+  price: string;
   stock_quantity: number;
   category: string;
   image_url?: string;
@@ -63,7 +62,7 @@ export default function InventoryPage() {
     // Filter by tab
     switch (activeTab) {
       case 'lowstock':
-        filtered = filtered.filter(p => p.stock_quantity > 0 && p.stock_quantity < 10);
+        filtered = filtered.filter(p => p.stock_quantity > 0 && p.stock_quantity < 51);
         break;
       case 'outofstock':
         filtered = filtered.filter(p => p.stock_quantity === 0);
@@ -157,7 +156,7 @@ export default function InventoryPage() {
               border: '1px solid #333333',
             }}>
             <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" />
-            Low Stock ({products.filter(p => p.stock_quantity > 0 && p.stock_quantity < 10).length})
+            Low Stock ({products.filter(p => p.stock_quantity > 0 && p.stock_quantity < 51).length})
           </button>
           <button
             onClick={() => setActiveTab('outofstock')}
@@ -198,15 +197,15 @@ export default function InventoryPage() {
                   
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-lg font-bold" style={{ color: '#E84E0F' }}>
-                      Rs. {(product.current_price ?? product.original_price ?? 0).toLocaleString()}
+                      Rs. {(product.price ?? 0).toLocaleString()}
                     </span>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        product.stock_quantity === 0
-                          ? 'bg-red-900 text-red-200'
-                          : product.stock_quantity < 10
-                          ? 'bg-orange-900 text-orange-200'
-                          : 'bg-green-900 text-green-200'
+                          product.stock_quantity === 0
+                            ? 'bg-red-900 text-red-200'
+                            : product.stock_quantity < 51
+                            ? 'bg-orange-900 text-orange-200'
+                            : 'bg-green-900 text-green-200'
                       }`}>
                       Stock: {product.stock_quantity}
                     </span>
@@ -215,7 +214,7 @@ export default function InventoryPage() {
                   {/* Actions */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => router.push(`/dashboard/products/${product.id}/edit`)}
+                      onClick={() => router.push(`/dashboard/inventory/${product.id}/edit`)}
                       className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition hover:opacity-80"
                       style={{ backgroundColor: '#2A7F8A' }}>
                       <FontAwesomeIcon icon={faEdit} className="mr-2" />
