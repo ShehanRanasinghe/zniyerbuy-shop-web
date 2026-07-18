@@ -220,7 +220,7 @@ const validateShopForm = (data) => {
 
 ### 3. Product Management
 
-**Location:** `app/dashboard/products/page.jsx`
+**Location:** `app/dashboard/inventory/page.tsx`
 
 **Features:**
 - Product catalog grid view
@@ -228,6 +228,7 @@ const validateShopForm = (data) => {
 - Edit/Delete actions
 - Stock status display
 - Price information
+- Edit route: `/dashboard/inventory/[id]/edit`
 
 **Product Card Display:**
 ```typescript
@@ -250,7 +251,7 @@ interface ProductCard {
 
 ### 4. New Product Creation
 
-**Location:** `app/dashboard/products/new/page.jsx`
+**Location:** `app/dashboard/inventory/new/page.tsx`
 
 **Features:**
 - Multi-field product form
