@@ -30,8 +30,7 @@ const OCCASION_TYPES = [
 interface Product {
   id: string;
   name: string;
-  original_price: number;
-  current_price: number;
+  price: number;
   image_url?: string;
   category: string;
 }
@@ -47,7 +46,7 @@ export default function NewPromotionPage() {
     title: '',
     occasion_type: '',
     product_id: '',
-    original_price: '',
+    price: '',
     discount_percentage: '',
     discounted_price: '',
     start_date: '',
@@ -71,8 +70,8 @@ export default function NewPromotionPage() {
 
   // Calculate discounted price when discount percentage or original price changes
   useEffect(() => {
-    if (formData.original_price && formData.discount_percentage) {
-      const original = parseFloat(formData.original_price);
+    if (formData.price && formData.discount_percentage) {
+      const original = parseFloat(formData.price);
       const discount = parseFloat(formData.discount_percentage);
       const discounted = original - (original * discount / 100);
       setFormData(prev => ({
@@ -80,7 +79,7 @@ export default function NewPromotionPage() {
         discounted_price: discounted.toFixed(2)
       }));
     }
-  }, [formData.original_price, formData.discount_percentage]);
+  }, [formData.price, formData.discount_percentage]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -96,7 +95,7 @@ export default function NewPromotionPage() {
     setFormData(prev => ({
       ...prev,
       product_id: product.id,
-      original_price: product.original_price.toString()
+      price: product.price.toString()
     }));
     setShowProductSearch(false);
     setSearchQuery('');
@@ -217,14 +216,14 @@ export default function NewPromotionPage() {
                       )}
                       <div>
                         <p className="text-white font-medium">{selectedProduct.name}</p>
-                        <p className="text-sm" style={{ color: '#888888' }}>Rs. {selectedProduct.original_price}</p>
+                        <p className="text-sm" style={{ color: '#888888' }}>Rs. {selectedProduct.price}</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedProduct(null);
-                        setFormData(prev => ({ ...prev, product_id: '', original_price: '' }));
+                        setFormData(prev => ({ ...prev, product_id: '', price: '' }));
                       }}
                       className="px-3 py-1 rounded text-sm"
                       style={{ backgroundColor: '#F44336', color: 'white' }}>
@@ -271,7 +270,7 @@ export default function NewPromotionPage() {
                                 )}
                                 <div className="flex-1">
                                   <p className="text-white font-medium">{product.name}</p>
-                                  <p className="text-sm" style={{ color: '#888888' }}>Rs. {product.original_price}</p>
+                                  <p className="text-sm" style={{ color: '#888888' }}>Rs. {product.price}</p>
                                 </div>
                               </button>
                             ))
@@ -300,8 +299,8 @@ export default function NewPromotionPage() {
                   </label>
                   <input
                     type="number"
-                    name="original_price"
-                    value={formData.original_price}
+                    name="price"
+                    value={formData.price}
                     readOnly
                     className="w-full px-4 py-3 rounded-lg text-white focus:outline-none"
                     style={{ backgroundColor: '#111111', border: '1px solid #333333', opacity: 0.7 }}
