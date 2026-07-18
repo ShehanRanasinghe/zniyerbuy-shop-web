@@ -15,6 +15,7 @@ interface Deal {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  discount_kind?: 'promotion' | 'deal';
 }
 
 export default function DiscountsPage() {
@@ -41,6 +42,13 @@ export default function DiscountsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getEditPath = (deal: Deal) => {
+    const kind = deal.discount_kind || (activeTab === 'promotions' ? 'promotion' : 'deal');
+    return kind === 'promotion'
+      ? `/dashboard/discounts/promotions/${deal.id}/edit`
+      : `/dashboard/discounts/deals/${deal.id}/edit`;
   };
 
   const handleDelete = async (dealId: string) => {
@@ -189,7 +197,7 @@ export default function DiscountsPage() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => router.push(`/dashboard/discounts/deals/${deal.id}/edit`)}
+                    onClick={() => router.push(getEditPath(deal))}
                     className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition hover:opacity-80"
                     style={{ backgroundColor: '#2A7F8A' }}>
                     <FontAwesomeIcon icon={faEdit} className="mr-2" />
