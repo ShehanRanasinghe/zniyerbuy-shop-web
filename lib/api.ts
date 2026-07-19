@@ -104,6 +104,7 @@ export const reviewAPI = {
 export const ordersAPI = {
   getOrders: (params?: Record<string, unknown>) => api.get('/orders', { params }),
   getOrder: (orderId: string) => api.get(`/orders/${orderId}`),
+  updateOrder: (orderId: string, data: Record<string, unknown>) => api.patch(`/orders/${orderId}`, data),
 };
 
 export default api;
