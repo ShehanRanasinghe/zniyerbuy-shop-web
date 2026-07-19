@@ -6,7 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBox, faTags, faShoppingCart, faDollarSign, faExclamationTriangle, faSpinner, faPlus, faWarehouse, faPercentage, faComments, faMapMarkedAlt, faStore, faUser, faChartLine, faStar } from '@fortawesome/free-solid-svg-icons';
-import { analyticsAPI, shopAPI, productAPI, ordersAPI } from '@/lib/api';
+import { analyticsAPI, shopAPI, productAPI, ordersAPI, authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface Stats {
@@ -100,12 +100,27 @@ export default function DashboardPage() {
       if (shopId) {
         const shopRes = await shopAPI.getShop(shopId);
         if (shopRes.data.success) {
-          setShopInfo({
+          setShopInfo(prev => ({
+            ...prev,
             name: shopRes.data.data.name || 'My Shop',
-            owner_name: shopRes.data.data.owner_name || 'Shop Owner',
             category: shopRes.data.data.category || 'General',
-          });
+          }));
         }
+      }
+
+      // Fetch owner's name — this is a users field (full_name), not a shops
+      // field, so it can't come from shopAPI.getShop(). Non-critical: if
+      // this fails, the rest of the dashboard should still load.
+      try {
+        const userRes = await authAPI.getCurrentUser();
+        if (userRes.data.success) {
+          setShopInfo(prev => ({
+            ...prev,
+            owner_name: userRes.data.data.full_name || 'Shop Owner',
+          }));
+        }
+      } catch {
+        // Non-critical — ignore if this fails
       }
 
       // Fetch analytics data. Uses allSettled (not all) so that if one call
