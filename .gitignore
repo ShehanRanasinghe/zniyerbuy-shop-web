@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#skills
+#https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+#npm install ui-ux-pro-max-cli  --> Install inside the project folder not Global. If you want to install globally use npm install -g ui-ux-pro-max-cli
+#npx ui-ux-pro-max-cli init --ai copilot  --> For Github Copilot
+#npx ui-ux-pro-max-cli init --ai antigravity --> For Antigravity
+.agents/
+.github/
