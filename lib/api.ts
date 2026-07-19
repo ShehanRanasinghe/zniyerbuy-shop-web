@@ -91,6 +91,7 @@ export const analyticsAPI = {
 export const authAPI = {
   register: (data: Record<string, unknown>) => api.post('/auth/register', data),
   getCurrentUser: () => api.get('/auth/me'),
+  updateProfile: (data: Record<string, unknown>) => api.patch('/auth/me', data),
 };
 
 // Review API endpoints

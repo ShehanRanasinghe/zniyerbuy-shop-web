@@ -202,16 +202,22 @@ export default function ProfilePage() {
       // Format opening hours
       const openingHours = `${formatTime(editForm.openingTime)} - ${formatTime(editForm.closingTime)}`;
 
-      const updateData = {
+      const shopUpdateData = {
         name: editForm.shopName,
         phone: editForm.phone,
         opening_hours: openingHours,
         logo_url: imagePreview,
       };
 
-      const response = await shopAPI.updateShop(shopId, updateData);
+      // Owner name (users.full_name) and shop fields are different entities
+      // and need separate API calls — previously ownerName was collected in
+      // the form but never actually sent anywhere.
+      const [profileResponse, shopResponse] = await Promise.all([
+        authAPI.updateProfile({ full_name: editForm.ownerName }),
+        shopAPI.updateShop(shopId, shopUpdateData),
+      ]);
 
-      if (response.data.success) {
+      if (profileResponse.data.success && shopResponse.data.success) {
         toast.success('Profile updated successfully!');
         setShowEditModal(false);
         fetchProfileData();
