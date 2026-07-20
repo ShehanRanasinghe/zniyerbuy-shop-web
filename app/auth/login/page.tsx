@@ -65,7 +65,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" loading="eager" priority />
+          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" style={{ width: 'auto', height: 'auto' }} loading="eager" priority />
           <h1 className="text-2xl sm:text-3xl font-extrabold mt-3 tracking-wide">
             <span style={{ color: '#E84E0F' }}>ZNIYER</span>
             <span style={{ color: '#2A7F8A' }}> BuY</span>
