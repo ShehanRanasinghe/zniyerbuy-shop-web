@@ -176,6 +176,16 @@ export default function EditDealPage() {
       return;
     }
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (formData.start_date < todayStr) {
+      toast.error('Start date cannot be in the past');
+      return;
+    }
+    if (formData.end_date < formData.start_date) {
+      toast.error('End date cannot be before the start date');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -349,6 +359,7 @@ export default function EditDealPage() {
                     name="start_date"
                     value={formData.start_date}
                     onChange={handleChange}
+                    min={new Date().toISOString().split('T')[0]}
                     className="w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2"
                     style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
                     required
@@ -363,6 +374,7 @@ export default function EditDealPage() {
                     name="end_date"
                     value={formData.end_date}
                     onChange={handleChange}
+                    min={formData.start_date || new Date().toISOString().split('T')[0]}
                     className="w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2"
                     style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
                     required

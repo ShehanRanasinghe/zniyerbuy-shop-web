@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart, faSpinner, faCheckCircle, faClock, faTruck, faTimesCircle, faEye, faDatabase } from '@fortawesome/free-solid-svg-icons';
+import { faShoppingCart, faSpinner, faCheckCircle, faClock, faTruck, faTimesCircle, faEye, faDatabase, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { ordersAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,7 @@ interface Order {
   customer_name: string;
   total_amount: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  payment_method?: 'cod' | 'paid' | 'pickup' | null;
   created_at: string;
   items_count: number;
 }
@@ -26,6 +27,8 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -86,9 +89,39 @@ export default function OrdersPage() {
     }
   };
 
+  const getPaymentMethodLabel = (method?: string | null) => {
+    switch (method) {
+      case 'cod':
+        return 'COD';
+      case 'paid':
+        return 'PAID';
+      case 'pickup':
+        return 'PICK UP';
+      default:
+        return null;
+    }
+  };
+
   const getFilteredOrders = () => {
-    if (filter === 'all') return orders;
-    return orders.filter(order => order.status === filter);
+    let result = orders;
+
+    if (filter !== 'all') {
+      result = result.filter(order => order.status === filter);
+    }
+
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      result = result.filter(order => new Date(order.created_at) >= fromDate);
+    }
+
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      result = result.filter(order => new Date(order.created_at) <= toDate);
+    }
+
+    return result;
   };
 
   const filteredOrders = getFilteredOrders();
@@ -134,6 +167,41 @@ export default function OrdersPage() {
             </button>
           ))}
         </div>
+
+        <div className="flex flex-wrap items-end gap-4 mt-4 pt-4" style={{ borderTop: '1px solid #222222' }}>
+          <div className="flex items-center gap-2" style={{ color: '#888888' }}>
+            <FontAwesomeIcon icon={faCalendarAlt} />
+            <span className="text-sm font-medium">Filter by date</span>
+          </div>
+          <div>
+            <label className="block text-xs mb-1" style={{ color: '#666666' }}>From</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2"
+              style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs mb-1" style={{ color: '#666666' }}>To</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2"
+              style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(''); setDateTo(''); }}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition"
+              style={{ backgroundColor: '#1A1A1A', color: '#888888', border: '1px solid #333333' }}>
+              Clear dates
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Orders List */}
@@ -155,6 +223,13 @@ export default function OrdersPage() {
                         <FontAwesomeIcon icon={getStatusIcon(order.status)} />
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                       </span>
+                      {getPaymentMethodLabel(order.payment_method) && (
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-semibold"
+                          style={{ backgroundColor: '#33333340', color: '#CCCCCC' }}>
+                          {getPaymentMethodLabel(order.payment_method)}
+                        </span>
+                      )}
                     </div>
                     <p style={{ color: '#888888' }}>Customer: {order.customer_name}</p>
                     <p className="text-sm" style={{ color: '#666666' }}>

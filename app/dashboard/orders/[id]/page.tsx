@@ -3,98 +3,75 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faShoppingCart, faSpinner, faArrowLeft, faBox, faUser, 
-  faCreditCard, faMapMarkerAlt, faPhone, faCalendar, 
-  faCheckCircle, faClock, faTruck, faTimesCircle, faEdit 
+import {
+  faShoppingCart, faSpinner, faArrowLeft, faBox, faUser,
+  faCreditCard, faMapMarkerAlt, faPhone, faCalendar,
+  faCheckCircle, faClock, faTruck, faTimesCircle, faEdit,
+  faMoneyBillWave, faFileInvoice, faSave, faStore, faTag,
 } from '@fortawesome/free-solid-svg-icons';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-
-interface OrderItem {
-  id: string;
-  product_name: string;
-  quantity: number;
-  price: number;
-  image_url?: string;
-}
+import { ordersAPI } from '@/lib/api';
+import axios from 'axios';
 
 interface Order {
   id: string;
   order_number: string;
   customer_name: string;
-  customer_phone: string;
-  delivery_address: string;
-  payment_method: string;
-  delivery_type: 'delivery' | 'pickup';
-  subtotal: number;
-  delivery_fee: number;
+  customer_phone: string | null;
+  delivery_address: string | null;
+  payment_method: 'cod' | 'paid' | 'pickup' | null;
+  subtotal: number | null;
+  delivery_fee: number | null;
   total_amount: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  items_count: number;
+  invoice_sent: boolean;
   created_at: string;
-  items: OrderItem[];
 }
 
 export default function OrderDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const orderId = params.id as string;
-  
+
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [savingFee, setSavingFee] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
   const [newStatus, setNewStatus] = useState('');
+  const [editingFee, setEditingFee] = useState(false);
+  const [feeInput, setFeeInput] = useState('');
 
   useEffect(() => {
     fetchOrderDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      setTimeout(() => {
-        const mockOrder: Order = {
-          id: orderId,
-          order_number: `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-          customer_name: 'John Doe',
-          customer_phone: '+94 77 123 4567',
-          delivery_address: '123 Main Street, Colombo 07, Sri Lanka',
-          payment_method: 'Cash on Delivery',
-          delivery_type: 'delivery',
-          subtotal: 4500,
-          delivery_fee: 500,
-          total_amount: 5000,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          items: [
-            {
-              id: '1',
-              product_name: 'Premium Coffee Beans',
-              quantity: 2,
-              price: 1500,
-              image_url: 'https://via.placeholder.com/100',
-            },
-            {
-              id: '2',
-              product_name: 'Organic Tea Leaves',
-              quantity: 1,
-              price: 1500,
-              image_url: 'https://via.placeholder.com/100',
-            },
-          ],
-        };
-        setOrder(mockOrder);
-        setNewStatus(mockOrder.status);
-        setLoading(false);
-      }, 1000);
+      const response = await ordersAPI.getOrder(orderId);
+      if (response.data.success) {
+        const fetchedOrder: Order = response.data.data;
+        setOrder(fetchedOrder);
+        setNewStatus(fetchedOrder.status);
+        setFeeInput(fetchedOrder.delivery_fee != null ? String(fetchedOrder.delivery_fee) : '');
+      }
     } catch (error) {
       console.error('Error fetching order:', error);
       toast.error('Failed to load order details');
+      setOrder(null);
+    } finally {
       setLoading(false);
     }
   };
+
+  const getErrorMessage = (error: unknown, fallback: string) =>
+    (axios.isAxiosError(error) && error.response?.data?.error) ||
+    (axios.isAxiosError(error) && error.response?.data?.errors?.[0]?.msg) ||
+    fallback;
 
   const handleStatusUpdate = async () => {
     if (!newStatus || newStatus === order?.status) {
@@ -104,20 +81,48 @@ export default function OrderDetailsPage() {
 
     try {
       setUpdating(true);
-      // API call to update status would go here
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (order) {
-        setOrder({ ...order, status: newStatus as any });
+      const response = await ordersAPI.updateOrder(orderId, { status: newStatus });
+
+      if (response.data.success) {
+        setOrder(response.data.data);
         toast.success('Order status updated successfully');
         setShowStatusUpdate(false);
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error('Failed to update order status');
+      toast.error(getErrorMessage(error, 'Failed to update order status'));
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleDeliveryFeeSave = async () => {
+    const parsedFee = parseFloat(feeInput);
+    if (Number.isNaN(parsedFee) || parsedFee < 0) {
+      toast.error('Please enter a valid delivery fee');
+      return;
+    }
+
+    try {
+      setSavingFee(true);
+      const response = await ordersAPI.updateOrder(orderId, { delivery_fee: parsedFee });
+
+      if (response.data.success) {
+        setOrder(response.data.data);
+        toast.success('Delivery fee updated successfully');
+        setEditingFee(false);
+      }
+    } catch (error) {
+      console.error('Error updating delivery fee:', error);
+      toast.error(getErrorMessage(error, 'Failed to update delivery fee'));
+    } finally {
+      setSavingFee(false);
+    }
+  };
+
+  // Placeholder only — invoice sending isn't implemented yet.
+  const handleSendInvoice = () => {
+    toast('Send Invoice is coming soon — not yet implemented', { icon: '🧾' });
   };
 
   const getStatusIcon = (status: string) => {
@@ -149,6 +154,45 @@ export default function OrderDetailsPage() {
         return '#4CAF50';
       case 'cancelled':
         return '#F44336';
+      default:
+        return '#888888';
+    }
+  };
+
+  const getPaymentMethodLabel = (method: string | null) => {
+    switch (method) {
+      case 'cod':
+        return 'Cash on Delivery (COD)';
+      case 'paid':
+        return 'Paid';
+      case 'pickup':
+        return 'Self Pickup';
+      default:
+        return 'Not specified';
+    }
+  };
+
+  const getPaymentMethodIcon = (method: string | null) => {
+    switch (method) {
+      case 'cod':
+        return faMoneyBillWave;
+      case 'paid':
+        return faCreditCard;
+      case 'pickup':
+        return faStore;
+      default:
+        return faTag;
+    }
+  };
+
+  const getPaymentMethodColor = (method: string | null) => {
+    switch (method) {
+      case 'cod':
+        return '#FF9800';
+      case 'paid':
+        return '#4CAF50';
+      case 'pickup':
+        return '#2A7F8A';
       default:
         return '#888888';
     }
@@ -195,20 +239,31 @@ export default function OrderDetailsPage() {
               View and manage order information
             </p>
           </div>
-          <button
-            onClick={() => setShowStatusUpdate(!showStatusUpdate)}
-            className="px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90 flex items-center gap-2"
-            style={{ backgroundColor: '#E84E0F' }}>
-            <FontAwesomeIcon icon={faEdit} />
-            Update Status
-          </button>
+          <div className="flex flex-wrap gap-3">
+            {order.status === 'delivered' && (
+              <button
+                onClick={handleSendInvoice}
+                className="px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90 flex items-center gap-2"
+                style={{ backgroundColor: '#2A7F8A' }}>
+                <FontAwesomeIcon icon={faFileInvoice} />
+                Send Invoice
+              </button>
+            )}
+            <button
+              onClick={() => setShowStatusUpdate(!showStatusUpdate)}
+              className="px-6 py-3 rounded-xl text-white font-semibold transition hover:opacity-90 flex items-center gap-2"
+              style={{ backgroundColor: '#E84E0F' }}>
+              <FontAwesomeIcon icon={faEdit} />
+              Update Status
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Status Update Section */}
+      {/* Status Update Panel */}
       {showStatusUpdate && (
         <div className="rounded-xl p-6" style={{ backgroundColor: "#111111", border: "1px solid #222222" }}>
-          <h2 className="text-xl font-bold text-white mb-4">Update Order Status</h2>
+          <h3 className="text-lg font-bold text-white mb-4">Update Order Status</h3>
           <div className="flex flex-col sm:flex-row gap-4">
             <select
               value={newStatus}
@@ -248,7 +303,7 @@ export default function OrderDetailsPage() {
       {/* Order Info Section */}
       <div className="rounded-xl p-6" style={{ backgroundColor: "#111111", border: "1px solid #222222" }}>
         <h2 className="text-xl font-bold text-white mb-6">Order Information</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Order ID */}
           <div className="rounded-lg p-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
@@ -282,45 +337,24 @@ export default function OrderDetailsPage() {
             </span>
           </div>
 
-          {/* Delivery Type */}
+          {/* Payment Method */}
           <div className="rounded-lg p-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
-            <p className="text-sm mb-2" style={{ color: '#888888' }}>Delivery Type</p>
-            <p className="text-xl font-bold text-white">
-              {order.delivery_type === 'delivery' ? '🚚 Home Delivery' : '🏪 Self Pickup'}
-            </p>
+            <p className="text-sm mb-2" style={{ color: '#888888' }}>Payment Method</p>
+            <span
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
+              style={{ backgroundColor: `${getPaymentMethodColor(order.payment_method)}20`, color: getPaymentMethodColor(order.payment_method) }}>
+              <FontAwesomeIcon icon={getPaymentMethodIcon(order.payment_method)} />
+              {getPaymentMethodLabel(order.payment_method)}
+            </span>
           </div>
         </div>
 
-        {/* Order Items */}
+        {/* Items count — no per-line item breakdown is stored yet, only a count */}
         <div className="mt-6">
           <h3 className="text-lg font-bold text-white mb-4">Order Items</h3>
-          <div className="space-y-3">
-            {order.items.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-lg p-4 flex items-center gap-4"
-                style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
-                {item.image_url && (
-                  <img
-                    src={item.image_url}
-                    alt={item.product_name}
-                    className="w-16 h-16 rounded object-cover"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="text-white font-semibold">{item.product_name}</p>
-                  <p className="text-sm" style={{ color: '#888888' }}>
-                    Quantity: {item.quantity}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm" style={{ color: '#888888' }}>Price</p>
-                  <p className="text-lg font-bold" style={{ color: '#E84E0F' }}>
-                    Rs. {(item.price * item.quantity).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))}
+          <div className="rounded-lg p-4 flex items-center gap-3" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
+            <FontAwesomeIcon icon={faBox} style={{ color: '#888888' }} />
+            <p className="text-white font-semibold">{order.items_count} item{order.items_count === 1 ? '' : 's'} in this order</p>
           </div>
         </div>
       </div>
@@ -331,7 +365,7 @@ export default function OrderDetailsPage() {
           <FontAwesomeIcon icon={faUser} />
           Customer Information
         </h2>
-        
+
         <div className="space-y-4">
           {/* Name */}
           <div className="rounded-lg p-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
@@ -345,7 +379,7 @@ export default function OrderDetailsPage() {
               <FontAwesomeIcon icon={faPhone} />
               Contact Number
             </p>
-            <p className="text-lg font-semibold text-white">{order.customer_phone}</p>
+            <p className="text-lg font-semibold text-white">{order.customer_phone || 'Not provided'}</p>
           </div>
 
           {/* Delivery Address */}
@@ -354,7 +388,9 @@ export default function OrderDetailsPage() {
               <FontAwesomeIcon icon={faMapMarkerAlt} />
               Delivery Address
             </p>
-            <p className="text-lg font-semibold text-white">{order.delivery_address}</p>
+            <p className="text-lg font-semibold text-white">
+              {order.payment_method === 'pickup' ? 'Self Pickup — no delivery address' : (order.delivery_address || 'Not provided')}
+            </p>
           </div>
         </div>
       </div>
@@ -365,59 +401,69 @@ export default function OrderDetailsPage() {
           <FontAwesomeIcon icon={faCreditCard} />
           Payment Information
         </h2>
-        
-        <div className="space-y-4">
-          {/* Payment Method */}
-          <div className="rounded-lg p-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
-            <p className="text-sm mb-2" style={{ color: '#888888' }}>Payment Method</p>
-            <p className="text-lg font-semibold text-white">{order.payment_method}</p>
-          </div>
 
+        <div className="space-y-4">
           {/* Price Breakdown */}
           <div className="rounded-lg p-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span style={{ color: '#888888' }}>Subtotal</span>
-                <span className="text-white font-semibold">Rs. {order.subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span style={{ color: '#888888' }}>Delivery Fee</span>
                 <span className="text-white font-semibold">
-                  {order.delivery_type === 'pickup' ? 'Free' : `Rs. ${order.delivery_fee.toLocaleString()}`}
+                  {order.subtotal != null ? `Rs. ${Number(order.subtotal).toLocaleString()}` : '—'}
                 </span>
               </div>
+
+              <div className="flex justify-between items-center gap-4">
+                <span style={{ color: '#888888' }}>Delivery Fee</span>
+                {editingFee ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={feeInput}
+                      onChange={(e) => setFeeInput(e.target.value)}
+                      className="w-28 px-3 py-1.5 rounded-lg text-white text-right focus:outline-none focus:ring-2"
+                      style={{ backgroundColor: '#111111', border: '1px solid #333333' }}
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleDeliveryFeeSave}
+                      disabled={savingFee}
+                      className="px-3 py-1.5 rounded-lg text-white text-sm font-medium transition hover:opacity-90 disabled:opacity-50"
+                      style={{ backgroundColor: '#2A7F8A' }}>
+                      <FontAwesomeIcon icon={savingFee ? faSpinner : faSave} className={savingFee ? 'animate-spin' : ''} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingFee(false);
+                        setFeeInput(order.delivery_fee != null ? String(order.delivery_fee) : '');
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium transition"
+                      style={{ backgroundColor: '#1A1A1A', color: '#888888', border: '1px solid #333333' }}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setEditingFee(true)}
+                    className="text-white font-semibold flex items-center gap-2 hover:opacity-80 transition"
+                    title="Click to edit delivery fee">
+                    {order.delivery_fee != null ? `Rs. ${Number(order.delivery_fee).toLocaleString()}` : 'Not set'}
+                    <FontAwesomeIcon icon={faEdit} className="text-xs" style={{ color: '#888888' }} />
+                  </button>
+                )}
+              </div>
+
               <div className="border-t pt-3" style={{ borderColor: '#333333' }}>
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold text-white">Total Amount</span>
                   <span className="text-2xl font-bold" style={{ color: '#E84E0F' }}>
-                    Rs. {order.total_amount.toLocaleString()}
+                    Rs. {Number(order.total_amount).toLocaleString()}
                   </span>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Delivery Type Badge */}
-          <div className="rounded-lg p-4 text-center" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
-            <p className="text-sm mb-2" style={{ color: '#888888' }}>Fulfillment Method</p>
-            <span
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-lg font-bold"
-              style={{ 
-                backgroundColor: order.delivery_type === 'delivery' ? '#2A7F8A20' : '#E84E0F20',
-                color: order.delivery_type === 'delivery' ? '#2A7F8A' : '#E84E0F'
-              }}>
-              {order.delivery_type === 'delivery' ? (
-                <>
-                  <FontAwesomeIcon icon={faTruck} />
-                  Home Delivery
-                </>
-              ) : (
-                <>
-                  <FontAwesomeIcon icon={faBox} />
-                  Self Pickup
-                </>
-              )}
-            </span>
           </div>
         </div>
       </div>

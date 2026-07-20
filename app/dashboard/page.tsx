@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBox, faTags, faShoppingCart, faDollarSign, faExclamationTriangle, faSpinner, faPlus, faWarehouse, faPercentage, faComments, faMapMarkedAlt, faStore, faUser, faChartLine, faStar } from '@fortawesome/free-solid-svg-icons';
-import { analyticsAPI, shopAPI, productAPI, ordersAPI } from '@/lib/api';
+import { faBox, faTags, faShoppingCart, faDollarSign, faExclamationTriangle, faSpinner, faPlus, faWarehouse, faPercentage, faComments, faMapMarkedAlt, faMapMarkerAlt, faStore, faUser, faChartLine, faStar } from '@fortawesome/free-solid-svg-icons';
+import { analyticsAPI, shopAPI, productAPI, ordersAPI, authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface Stats {
@@ -36,6 +36,7 @@ interface ShopInfo {
   name: string;
   owner_name: string;
   category: string;
+  address: string;
 }
 
 interface Order {
@@ -49,7 +50,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [timeFilter, setTimeFilter] = useState('today');
-  const [shopInfo, setShopInfo] = useState<ShopInfo>({ name: '', owner_name: '', category: '' });
+  const [shopInfo, setShopInfo] = useState<ShopInfo>({ name: '', owner_name: '', category: '', address: '' });
   const [stats, setStats] = useState<Stats>({
     totalShops: 0,
     totalProducts: 0,
@@ -100,12 +101,28 @@ export default function DashboardPage() {
       if (shopId) {
         const shopRes = await shopAPI.getShop(shopId);
         if (shopRes.data.success) {
-          setShopInfo({
+          setShopInfo(prev => ({
+            ...prev,
             name: shopRes.data.data.name || 'My Shop',
-            owner_name: shopRes.data.data.owner_name || 'Shop Owner',
             category: shopRes.data.data.category || 'General',
-          });
+            address: shopRes.data.data.address || '',
+          }));
         }
+      }
+
+      // Fetch owner's name — this is a users field (full_name), not a shops
+      // field, so it can't come from shopAPI.getShop(). Non-critical: if
+      // this fails, the rest of the dashboard should still load.
+      try {
+        const userRes = await authAPI.getCurrentUser();
+        if (userRes.data.success) {
+          setShopInfo(prev => ({
+            ...prev,
+            owner_name: userRes.data.data.full_name || 'Shop Owner',
+          }));
+        }
+      } catch {
+        // Non-critical — ignore if this fails
       }
 
       // Fetch analytics data. Uses allSettled (not all) so that if one call
@@ -197,8 +214,17 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-2xl font-bold text-white">{shopInfo.owner_name}</h2>
             <div className="flex items-center gap-2 mt-1">
+
               <FontAwesomeIcon icon={faStore} style={{ color: '#888888' }} />
-              <p className="text-lg" style={{ color: '#888888' }}>{shopInfo.name}</p>
+              <p className="text-lg" style={{ color: '#888888' }}>{shopInfo.name} ||</p>
+
+              {shopInfo.address && (
+              <div className="flex items-center gap-1 ">
+              <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#888888' }} />
+              <p className="text-sm" style={{ color: '#888888' }}>{shopInfo.address}</p>
+              </div>
+            )}
+              
             </div>
           </div>
         </div>

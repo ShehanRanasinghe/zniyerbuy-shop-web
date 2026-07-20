@@ -122,8 +122,8 @@ export default function ProfilePage() {
         if (hours.length === 2) {
           setEditForm(prev => ({
             ...prev,
-            openingTime: hours[0],
-            closingTime: hours[1],
+            openingTime: parseTo24Hour(hours[0]),
+            closingTime: parseTo24Hour(hours[1]),
           }));
         }
       }
@@ -137,14 +137,15 @@ export default function ProfilePage() {
   };
 
   const handleEditClick = () => {
+    const [storedOpen, storedClose] = profileData.openingHours.split(' - ');
     setEditForm({
       ownerName: profileData.ownerName,
       email: profileData.email,
       phone: profileData.phone,
       shopName: profileData.shopName,
       openingHours: profileData.openingHours,
-      openingTime: profileData.openingHours.split(' - ')[0] || '09:00',
-      closingTime: profileData.openingHours.split(' - ')[1] || '18:00',
+      openingTime: storedOpen ? parseTo24Hour(storedOpen) : '09:00',
+      closingTime: storedClose ? parseTo24Hour(storedClose) : '18:00',
       period: 'AM-PM',
     });
     setShowEditModal(true);
@@ -189,6 +190,33 @@ export default function ProfilePage() {
     return `${hour}:${minutes} ${ampm}`;
   };
 
+  // Converts a stored 12-hour string like '8:00 AM' or '6:00 PM' back into
+  // the 24-hour 'HH:MM' format required by <input type="time">. Without
+  // this, the edit form was assigning '8:00 AM' directly into a time input
+  // (which silently fails to display it), and formatTime() would then
+  // re-append AM/PM onto that already-formatted string on save, compounding
+  // with every edit (e.g. '8:00 AM AM AM').
+  const parseTo24Hour = (time12h: string): string => {
+    // Collapse any repeated AM/PM suffixes left over from the previous bug
+    // (e.g. '8:00 AM AM AM' -> '8:00 AM') so already-corrupted stored data
+    // self-heals the next time it's edited, instead of failing to parse.
+    const collapsed = time12h.trim().replace(/(\s*(AM|PM))+$/i, (match) => {
+      const period = /PM/i.test(match) ? 'PM' : 'AM';
+      return ` ${period}`;
+    });
+
+    const match = collapsed.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return time12h; // unrecognized format, leave as-is
+
+    let [, hoursStr, minutes, period] = match;
+    let hours = parseInt(hoursStr, 10);
+
+    if (period.toUpperCase() === 'PM' && hours !== 12) hours += 12;
+    if (period.toUpperCase() === 'AM' && hours === 12) hours = 0;
+
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+  };
+
   const handleSaveProfile = async () => {
     try {
       setSaving(true);
@@ -202,16 +230,22 @@ export default function ProfilePage() {
       // Format opening hours
       const openingHours = `${formatTime(editForm.openingTime)} - ${formatTime(editForm.closingTime)}`;
 
-      const updateData = {
+      const shopUpdateData = {
         name: editForm.shopName,
         phone: editForm.phone,
         opening_hours: openingHours,
         logo_url: imagePreview,
       };
 
-      const response = await shopAPI.updateShop(shopId, updateData);
+      // Owner name (users.full_name) and shop fields are different entities
+      // and need separate API calls — previously ownerName was collected in
+      // the form but never actually sent anywhere.
+      const [profileResponse, shopResponse] = await Promise.all([
+        authAPI.updateProfile({ full_name: editForm.ownerName }),
+        shopAPI.updateShop(shopId, shopUpdateData),
+      ]);
 
-      if (response.data.success) {
+      if (profileResponse.data.success && shopResponse.data.success) {
         toast.success('Profile updated successfully!');
         setShowEditModal(false);
         fetchProfileData();
@@ -301,7 +335,7 @@ export default function ProfilePage() {
             )}
           </div>
           <h2 className="text-2xl font-bold text-white">{profileData.shopName || 'Shop Name'}</h2>
-          <p className="text-sm mt-1" style={{ color: '#888888' }}>Shop Owner</p>
+          <p className="text-sm mt-1" style={{ color: '#888888' }}>{profileData.ownerName || 'Shop Owner'}</p>
         </div>
 
         {/* Account Information Section */}
@@ -311,6 +345,15 @@ export default function ProfilePage() {
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Owner Name */}
+            <div className="p-4 rounded-lg" style={{ backgroundColor: '#1A1A1A' }}>
+              <div className="flex items-center gap-3 mb-2">
+                <FontAwesomeIcon icon={faUser} style={{ color: '#E84E0F' }} />
+                <span className="text-sm font-semibold" style={{ color: '#888888' }}>Shop Owner Name</span>
+              </div>
+              <p className="text-white font-medium">{profileData.ownerName || 'Not set'}</p>
+            </div>
+
             {/* Email */}
             <div className="p-4 rounded-lg" style={{ backgroundColor: '#1A1A1A' }}>
               <div className="flex items-center gap-3 mb-2">
@@ -361,7 +404,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Opening Hours */}
-            <div className="p-4 rounded-lg md:col-span-2" style={{ backgroundColor: '#1A1A1A' }}>
+            <div className="p-4 rounded-lg" style={{ backgroundColor: '#1A1A1A' }}>
               <div className="flex items-center gap-3 mb-2">
                 <FontAwesomeIcon icon={faClock} style={{ color: '#E84E0F' }} />
                 <span className="text-sm font-semibold" style={{ color: '#888888' }}>Opening Hours</span>
