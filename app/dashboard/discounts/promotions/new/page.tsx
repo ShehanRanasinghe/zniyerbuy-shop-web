@@ -60,12 +60,16 @@ export default function NewPromotionPage() {
   });
 
   useEffect(() => {
-    fetchProducts();
+    const savedShopId = localStorage.getItem('shopId');
+    if (savedShopId) {
+      setFormData(prev => ({ ...prev, shop_id: savedShopId }));
+      fetchProducts(savedShopId);
+    }
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (shopId: string) => {
     try {
-      const response = await productAPI.getProducts({});
+      const response = await productAPI.getProducts({ shop_id: shopId });
       if (response.data.success) {
         setProducts(response.data.data);
       }
@@ -119,6 +123,16 @@ export default function NewPromotionPage() {
 
     if (!formData.title || !formData.occasion_type || !formData.product_id || !formData.discount_percentage || !formData.start_date || !formData.end_date) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (formData.start_date < todayStr) {
+      toast.error('Start date cannot be in the past');
+      return;
+    }
+    if (formData.end_date < formData.start_date) {
+      toast.error('End date cannot be before the start date');
       return;
     }
 
@@ -393,6 +407,7 @@ export default function NewPromotionPage() {
                     name="start_date"
                     value={formData.start_date}
                     onChange={handleChange}
+                    min={new Date().toISOString().split('T')[0]}
                     className="w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2"
                     style={{ backgroundColor: '#111111', border: '1px solid #333333' }}
                     required
@@ -416,6 +431,7 @@ export default function NewPromotionPage() {
                     name="end_date"
                     value={formData.end_date}
                     onChange={handleChange}
+                    min={formData.start_date || new Date().toISOString().split('T')[0]}
                     className="w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2"
                     style={{ backgroundColor: '#111111', border: '1px solid #333333' }}
                     required

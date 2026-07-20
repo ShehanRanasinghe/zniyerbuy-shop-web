@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWarehouse, faPlus, faEdit, faTrash, faSpinner, faExclamationTriangle, faTimesCircle, faBox, faSearch } from '@fortawesome/free-solid-svg-icons';
-import { productAPI } from '@/lib/api';
+import { faWarehouse, faPlus, faEdit, faTrash, faSpinner, faExclamationTriangle, faTimesCircle, faBox, faSearch, faTag } from '@fortawesome/free-solid-svg-icons';
+import { productAPI, dealAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface Product {
@@ -21,6 +21,7 @@ export default function InventoryPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [promotedProductIds, setPromotedProductIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'all' | 'lowstock' | 'outofstock'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -31,9 +32,34 @@ export default function InventoryPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await productAPI.getProducts({});
+      const shopId = localStorage.getItem('shopId');
+      const response = await productAPI.getProducts(shopId ? { shop_id: shopId } : {});
       if (response.data.success) {
         setProducts(response.data.data);
+      }
+
+      // Fetch active promotions/deals for this shop, to badge products
+      // that currently have one running.
+      if (shopId) {
+        try {
+          const dealsResponse = await dealAPI.getDeals({ shop_id: shopId });
+          if (dealsResponse.data.success) {
+            const today = new Date();
+            const activeProductIds = new Set<string>(
+              dealsResponse.data.data
+                .filter((d: { is_active: boolean; product_id: string | null; start_date: string; end_date: string }) =>
+                  d.is_active &&
+                  d.product_id &&
+                  new Date(d.start_date) <= today &&
+                  new Date(d.end_date) >= today
+                )
+                .map((d: { product_id: string }) => d.product_id)
+            );
+            setPromotedProductIds(activeProductIds);
+          }
+        } catch (dealsError) {
+          console.error('Error fetching promotions/deals:', dealsError);
+        }
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -183,11 +209,20 @@ export default function InventoryPage() {
                   className="rounded-xl p-4 hover:shadow-lg transition"
                   style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
                   {/* Product Image */}
-                  <div className="w-full h-40 rounded-lg mb-3 flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#222222' }}>
+                  <div className="relative w-full h-40 rounded-lg mb-3 flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#222222' }}>
                     {product.image_url ? (
                       <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                     ) : (
                       <FontAwesomeIcon icon={faBox} className="text-4xl" style={{ color: '#666666' }} />
+                    )}
+                    {promotedProductIds.has(product.id) && (
+                      <span
+                        className="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1"
+                        style={{ backgroundColor: '#E84E0F', color: 'white' }}
+                        title="This product has an active promotion or deal">
+                        <FontAwesomeIcon icon={faTag} />
+                        On Offer
+                      </span>
                     )}
                   </div>
 

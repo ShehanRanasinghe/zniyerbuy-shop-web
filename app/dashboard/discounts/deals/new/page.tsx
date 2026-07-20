@@ -124,6 +124,11 @@ export default function NewDealPage() {
       return;
     }
 
+    if (formData.end_date < formData.start_date) {
+      toast.error('Valid Until date cannot be before the start date');
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -292,6 +297,7 @@ export default function NewDealPage() {
                   name="end_date"
                   value={formData.end_date}
                   onChange={handleChange}
+                  min={formData.start_date}
                   className="w-full px-4 py-3 rounded-lg text-white focus:outline-none focus:ring-2"
                   style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}
                   required

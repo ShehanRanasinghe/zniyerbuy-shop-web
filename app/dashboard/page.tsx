@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBox, faTags, faShoppingCart, faDollarSign, faExclamationTriangle, faSpinner, faPlus, faWarehouse, faPercentage, faComments, faMapMarkedAlt, faStore, faUser, faChartLine, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faBox, faTags, faShoppingCart, faDollarSign, faExclamationTriangle, faSpinner, faPlus, faWarehouse, faPercentage, faComments, faMapMarkedAlt, faMapMarkerAlt, faStore, faUser, faChartLine, faStar } from '@fortawesome/free-solid-svg-icons';
 import { analyticsAPI, shopAPI, productAPI, ordersAPI, authAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -36,6 +36,7 @@ interface ShopInfo {
   name: string;
   owner_name: string;
   category: string;
+  address: string;
 }
 
 interface Order {
@@ -49,7 +50,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [timeFilter, setTimeFilter] = useState('today');
-  const [shopInfo, setShopInfo] = useState<ShopInfo>({ name: '', owner_name: '', category: '' });
+  const [shopInfo, setShopInfo] = useState<ShopInfo>({ name: '', owner_name: '', category: '', address: '' });
   const [stats, setStats] = useState<Stats>({
     totalShops: 0,
     totalProducts: 0,
@@ -104,6 +105,7 @@ export default function DashboardPage() {
             ...prev,
             name: shopRes.data.data.name || 'My Shop',
             category: shopRes.data.data.category || 'General',
+            address: shopRes.data.data.address || '',
           }));
         }
       }
@@ -212,8 +214,17 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-2xl font-bold text-white">{shopInfo.owner_name}</h2>
             <div className="flex items-center gap-2 mt-1">
+
               <FontAwesomeIcon icon={faStore} style={{ color: '#888888' }} />
-              <p className="text-lg" style={{ color: '#888888' }}>{shopInfo.name}</p>
+              <p className="text-lg" style={{ color: '#888888' }}>{shopInfo.name} ||</p>
+
+              {shopInfo.address && (
+              <div className="flex items-center gap-1 ">
+              <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#888888' }} />
+              <p className="text-sm" style={{ color: '#888888' }}>{shopInfo.address}</p>
+              </div>
+            )}
+              
             </div>
           </div>
         </div>

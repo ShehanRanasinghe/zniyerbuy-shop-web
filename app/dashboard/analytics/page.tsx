@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartLine, faSpinner, faEye, faHeart, faStar, faShoppingCart, faDollarSign, faBox, faBan, faUsers, faMapMarkerAlt, faArrowTrendUp, faRobot } from '@fortawesome/free-solid-svg-icons';
-import { analyticsAPI } from '@/lib/api';
+import { analyticsAPI, ordersAPI, productAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -37,31 +37,21 @@ export default function AnalyticsPage() {
     totalRecommendationScore: 0,
   });
 
-  // Mock revenue data
-  const revenueData = {
-    totalRevenue: 125450,
-    totalSales: 342,
-    cancelledOrders: 18,
-    cancelledRevenue: 8750,
-  };
+  // Real revenue/sales data, computed from actual orders (see fetchAnalytics)
+  const [revenueData, setRevenueData] = useState({
+    totalRevenue: 0,
+    totalSales: 0,
+    cancelledOrders: 0,
+    cancelledRevenue: 0,
+  });
 
-  // Mock data for charts
-  const salesData = [
-    { name: 'Mon', sales: 4000, orders: 24 },
-    { name: 'Tue', sales: 3000, orders: 18 },
-    { name: 'Wed', sales: 5000, orders: 32 },
-    { name: 'Thu', sales: 2780, orders: 15 },
-    { name: 'Fri', sales: 6890, orders: 42 },
-    { name: 'Sat', sales: 8390, orders: 55 },
-    { name: 'Sun', sales: 7490, orders: 48 },
-  ];
+  // Real weekly sales trend, computed from actual orders over the last 7 days
+  const [salesData, setSalesData] = useState<{ name: string; sales: number; orders: number }[]>([]);
 
-  const categoryData = [
-    { name: 'Electronics', value: 400 },
-    { name: 'Fashion', value: 300 },
-    { name: 'Food', value: 200 },
-    { name: 'Home', value: 100 },
-  ];
+  // Real product distribution by category (there's no per-order line-item
+  // data in this schema yet, so this reflects the shop's product catalog
+  // by category rather than fabricated sales-by-category numbers)
+  const [categoryData, setCategoryData] = useState<{ name: string; value: number }[]>([]);
 
   // AI Predictions Mock Data
   const nextMonthPredictions = {
@@ -116,6 +106,70 @@ export default function AnalyticsPage() {
 
       if (performanceRes.data.success) {
         setPerformance(performanceRes.data.stats);
+      }
+
+      // Real revenue summary + weekly sales trend, computed from actual orders
+      try {
+        const ordersRes = await ordersAPI.getOrders({});
+        if (ordersRes.data.success) {
+          const orders: { total_amount: number; status: string; created_at: string }[] = ordersRes.data.data || [];
+
+          const nonCancelled = orders.filter(o => o.status !== 'cancelled');
+          const cancelled = orders.filter(o => o.status === 'cancelled');
+
+          setRevenueData({
+            totalRevenue: nonCancelled.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0),
+            totalSales: nonCancelled.length,
+            cancelledOrders: cancelled.length,
+            cancelledRevenue: cancelled.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0),
+          });
+
+          // Weekly sales trend: last 7 days, including today
+          const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const days: { name: string; sales: number; orders: number; dateKey: string }[] = [];
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            days.push({
+              name: dayLabels[d.getDay()],
+              sales: 0,
+              orders: 0,
+              dateKey: d.toISOString().split('T')[0],
+            });
+          }
+
+          nonCancelled.forEach(order => {
+            const orderDateKey = new Date(order.created_at).toISOString().split('T')[0];
+            const dayEntry = days.find(d => d.dateKey === orderDateKey);
+            if (dayEntry) {
+              dayEntry.sales += Number(order.total_amount) || 0;
+              dayEntry.orders += 1;
+            }
+          });
+
+          setSalesData(days.map(({ name, sales, orders }) => ({ name, sales, orders })));
+        }
+      } catch (ordersError) {
+        console.error('Error fetching orders for analytics:', ordersError);
+      }
+
+      // Real product distribution by category (no per-order line-item data
+      // exists yet, so this is the shop's catalog breakdown by category,
+      // not sales-by-category)
+      try {
+        const shopId = localStorage.getItem('shopId');
+        const productsRes = await productAPI.getProducts(shopId ? { shop_id: shopId } : {});
+        if (productsRes.data.success) {
+          const products: { category: string }[] = productsRes.data.data || [];
+          const counts: Record<string, number> = {};
+          products.forEach(p => {
+            const cat = p.category || 'Other';
+            counts[cat] = (counts[cat] || 0) + 1;
+          });
+          setCategoryData(Object.entries(counts).map(([name, value]) => ({ name, value })));
+        }
+      } catch (productsError) {
+        console.error('Error fetching products for analytics:', productsError);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -224,7 +278,7 @@ export default function AnalyticsPage() {
 
         {/* Category Distribution */}
         <div className="rounded-xl p-6" style={{ backgroundColor: "#111111", border: "1px solid #222222" }}>
-          <h2 className="text-xl font-bold text-white mb-6">Sales by Category</h2>
+          <h2 className="text-xl font-bold text-white mb-6">Products by Category</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
