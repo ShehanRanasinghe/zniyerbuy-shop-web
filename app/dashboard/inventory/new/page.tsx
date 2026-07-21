@@ -9,7 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBox, faSave, faArrowLeft, faSpinner, faUpload, faLink } from '@fortawesome/free-solid-svg-icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { productAPI } from '@/lib/api';
+import { productAPI, uploadAPI } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
@@ -97,6 +97,7 @@ export default function NewProductPage() {
   const [loading, setLoading] = useState(false);
   const [imageInputType, setImageInputType] = useState<'url' | 'upload'>('url');
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     shop_id: '',
     name: '',
@@ -134,37 +135,53 @@ export default function NewProductPage() {
     }));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
-        return;
-      }
+    if (!file) return;
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
 
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return;
-      }
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setImagePreview(result);
-        setFormData(prev => ({
-          ...prev,
-          image_url: result
-        }));
-      };
-      reader.readAsDataURL(file);
+    // Instant local preview while the real upload happens in the background
+    const localPreviewUrl = URL.createObjectURL(file);
+    setImagePreview(localPreviewUrl);
+
+    try {
+      setUploadingImage(true);
+      const response = await uploadAPI.uploadProductImage(file);
+      if (response.data.success) {
+        // image_url must be the real hosted URL from Supabase Storage —
+        // storing the raw base64 data directly would overflow the
+        // database column (VARCHAR(255)), which is what caused
+        // "value too long for type character varying(255)" on submit.
+        setFormData(prev => ({ ...prev, image_url: response.data.imageUrl }));
+        setImagePreview(response.data.imageUrl);
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+      setImagePreview('');
+    } finally {
+      setUploadingImage(false);
+      URL.revokeObjectURL(localPreviewUrl);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (uploadingImage) {
+      toast.error('Please wait for the image to finish uploading');
+      return;
+    }
 
     if (!formData.shop_id) {
       toast.error('Please select or specify a shop');
@@ -297,7 +314,15 @@ export default function NewProductPage() {
                     alt="Product preview"
                     className="w-full h-full object-cover"
                   />
+                  {uploadingImage && (
+                    <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                      <FontAwesomeIcon icon={faSpinner} className="animate-spin text-white" />
+                    </div>
+                  )}
                 </div>
+                {uploadingImage && (
+                  <p className="text-xs mt-1" style={{ color: '#888888' }}>Uploading image...</p>
+                )}
               </div>
             )}
           </div>

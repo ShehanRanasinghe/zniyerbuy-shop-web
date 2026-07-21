@@ -37,12 +37,14 @@ interface ShopInfo {
   owner_name: string;
   category: string;
   address: string;
+  logo_url: string;
 }
 
 interface Order {
   id: string;
   total_amount: number;
   status: string;
+  created_at: string;
 }
 
 export default function DashboardPage() {
@@ -50,7 +52,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [timeFilter, setTimeFilter] = useState('today');
-  const [shopInfo, setShopInfo] = useState<ShopInfo>({ name: '', owner_name: '', category: '', address: '' });
+  const [shopInfo, setShopInfo] = useState<ShopInfo>({ name: '', owner_name: '', category: '', address: '', logo_url: '' });
   const [stats, setStats] = useState<Stats>({
     totalShops: 0,
     totalProducts: 0,
@@ -106,6 +108,7 @@ export default function DashboardPage() {
             name: shopRes.data.data.name || 'My Shop',
             category: shopRes.data.data.category || 'General',
             address: shopRes.data.data.address || '',
+            logo_url: shopRes.data.data.logo_url || '',
           }));
         }
       }
@@ -147,25 +150,33 @@ export default function DashboardPage() {
         setTopProducts(topProductsResult.value.data.data.slice(0, 5));
       }
 
-      // Fetch products to calculate low stock count
+      // Fetch products to calculate low stock count (scoped to this shop only —
+      // previously fetched all shops' products, so a fresh shop with zero
+      // products of its own would still show a non-zero count from other
+      // shops' low-stock items)
       try {
-        const productsRes = await productAPI.getProducts({});
+        const productsRes = await productAPI.getProducts(shopId ? { shop_id: shopId } : {});
         if (productsRes.data.success) {
           const products = productsRes.data.data;
-          const lowStock = products.filter((p: Product) => (p.stock_quantity || 0) < 10).length;
+          const lowStock = products.filter((p: Product) => (p.stock_quantity || 0) < 51).length;
           setLowStockCount(lowStock);
         }
       } catch {
         // Non-critical — ignore if products fail to load
       }
 
-      // Fetch orders to calculate orders count and revenue
+      // Fetch orders to calculate orders count and revenue, filtered by
+      // the selected time range (today/yesterday/last7days/thismonth/lifetime).
+      // Previously timeFilter only re-triggered a fetch of the same
+      // unfiltered data — clicking a different filter changed nothing.
       try {
         const ordersRes = await ordersAPI.getOrders({});
         if (ordersRes.data.success) {
-          const orders: Order[] = ordersRes.data.data || [];
-          setOrdersCount(orders.length);
-          const totalRevenue = orders
+          const allOrders: Order[] = ordersRes.data.data || [];
+          const filteredOrders = filterOrdersByTimeRange(allOrders, timeFilter);
+
+          setOrdersCount(filteredOrders.length);
+          const totalRevenue = filteredOrders
             .filter((order) => order.status !== 'cancelled')
             .reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0);
           setRevenue(totalRevenue);
@@ -185,7 +196,42 @@ export default function DashboardPage() {
     }
   };
 
-  // Returns current stat values for display (filtered by timeFilter in future API)
+  // Filters orders by the selected time range. Used by fetchDashboardData
+  // to compute ordersCount/revenue for the currently selected filter.
+  const filterOrdersByTimeRange = (orders: Order[], filter: string): Order[] => {
+    if (filter === 'lifetime') return orders;
+
+    const now = new Date();
+
+    if (filter === 'today') {
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return orders.filter(o => new Date(o.created_at) >= startOfToday);
+    }
+
+    if (filter === 'yesterday') {
+      const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return orders.filter(o => {
+        const created = new Date(o.created_at);
+        return created >= startOfYesterday && created < startOfToday;
+      });
+    }
+
+    if (filter === 'last7days') {
+      const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+      return orders.filter(o => new Date(o.created_at) >= sevenDaysAgo);
+    }
+
+    if (filter === 'thismonth') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return orders.filter(o => new Date(o.created_at) >= startOfMonth);
+    }
+
+    return orders;
+  };
+
+  // Returns current stat values for display — ordersCount/revenue are
+  // already computed for the selected timeFilter in fetchDashboardData
   const getFilteredStats = () => ({
     totalProducts: stats.totalProducts,
     lowStockProducts: lowStockCount,
@@ -208,8 +254,12 @@ export default function DashboardPage() {
       {/* Header with Owner and Shop Name */}
       <div className="rounded-xl p-6" style={{ backgroundColor: "#111111", border: "1px solid #222222" }}>
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FEF0EB' }}>
-            <FontAwesomeIcon icon={faUser} className="text-2xl" style={{ color: '#E84E0F' }} />
+          <div className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#FEF0EB' }}>
+            {shopInfo.logo_url ? (
+              <img src={shopInfo.logo_url} alt={shopInfo.name} className="w-full h-full object-cover" />
+            ) : (
+              <FontAwesomeIcon icon={faUser} className="text-2xl" style={{ color: '#E84E0F' }} />
+            )}
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">{shopInfo.owner_name}</h2>
@@ -218,10 +268,10 @@ export default function DashboardPage() {
               <FontAwesomeIcon icon={faStore} style={{ color: '#888888' }} />
               <p className="text-lg" style={{ color: '#888888' }}>{shopInfo.name} ||</p>
 
-              {shopInfo.address && (
+            {shopInfo.address && (
               <div className="flex items-center gap-1 ">
-              <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#888888' }} />
-              <p className="text-sm" style={{ color: '#888888' }}>{shopInfo.address}</p>
+                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#888888' }} />
+                <p className="text-sm" style={{ color: '#888888' }}>{shopInfo.address}</p>
               </div>
             )}
               

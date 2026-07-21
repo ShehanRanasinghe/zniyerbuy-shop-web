@@ -13,7 +13,7 @@ import {
   faCheckCircle
 } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/navigation';
-import { authAPI, shopAPI } from '@/lib/api';
+import { authAPI, shopAPI, uploadAPI } from '@/lib/api';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import toast from 'react-hot-toast';
@@ -49,6 +49,8 @@ export default function ProfilePage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [imagePreview, setImagePreview] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [imageInputType, setImageInputType] = useState<'upload' | 'url'>('url');
 
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -156,24 +158,39 @@ export default function ProfilePage() {
     setImagePreview(url);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
-        return;
-      }
+    if (!file) return;
 
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return;
-      }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    const localPreviewUrl = URL.createObjectURL(file);
+    setImagePreview(localPreviewUrl);
+
+    try {
+      setUploadingImage(true);
+      const response = await uploadAPI.uploadShopImage(file);
+      if (response.data.success) {
+        // logo_url must be the real hosted URL — shops.logo_url is also a
+        // VARCHAR(255) database column, so storing raw base64 data here
+        // would hit the same "value too long" error as product images did.
+        setImagePreview(response.data.imageUrl);
+      }
+    } catch (error) {
+      console.error('Error uploading shop image:', error);
+      toast.error('Failed to upload image');
+      setImagePreview('');
+    } finally {
+      setUploadingImage(false);
+      URL.revokeObjectURL(localPreviewUrl);
     }
   };
 
@@ -218,6 +235,11 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
+    if (uploadingImage) {
+      toast.error('Please wait for the image to finish uploading');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -425,7 +447,7 @@ export default function ProfilePage() {
           </button>
 
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="px-6 py-3 rounded-xl font-semibold transition hover:opacity-80 flex items-center justify-center gap-2"
             style={{ backgroundColor: '#1A1A1A', color: '#888888', border: '1px solid #333333' }}>
             <FontAwesomeIcon icon={faSignOutAlt} />
@@ -544,14 +566,22 @@ export default function ProfilePage() {
                         Remove
                       </button>
                     </div>
-                    <div className="flex justify-center p-4 rounded-lg" style={{ backgroundColor: '#1A1A1A' }}>
+                    <div className="flex justify-center p-4 rounded-lg relative" style={{ backgroundColor: '#1A1A1A' }}>
                       <img
                         src={imagePreview}
                         alt="Logo preview"
                         className="max-w-full h-auto rounded-lg"
                         style={{ maxHeight: '200px', objectFit: 'contain' }}
                       />
+                      {uploadingImage && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-lg" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                          <FontAwesomeIcon icon={faSpinner} className="animate-spin text-white" />
+                        </div>
+                      )}
                     </div>
+                    {uploadingImage && (
+                      <p className="text-xs mt-1 text-center" style={{ color: '#888888' }}>Uploading image...</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -672,6 +702,33 @@ export default function ProfilePage() {
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Logout confirmation pop-up */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <div className="rounded-2xl p-6 w-full max-w-sm" style={{ backgroundColor: '#111111', border: '1px solid #222222' }}>
+            <h3 className="text-lg font-bold text-white mb-2">Log out?</h3>
+            <p className="text-sm mb-6" style={{ color: '#888888' }}>
+              Are you sure you want to log out of your account?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 px-4 py-3 rounded-xl font-semibold transition"
+                style={{ backgroundColor: '#1A1A1A', color: '#888888', border: '1px solid #333333' }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition hover:opacity-90 flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#E84E0F' }}>
+                <FontAwesomeIcon icon={faSignOutAlt} />
+                Logout
+              </button>
             </div>
           </div>
         </div>
