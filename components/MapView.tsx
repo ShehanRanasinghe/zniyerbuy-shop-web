@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 
 interface MapViewProps {
   center: { lat: number; lng: number };
@@ -79,8 +79,9 @@ export default function MapView({ center, zoom, onLocationSelect, currentMarker 
           disableDefaultUI={false}
           mapTypeControl={true}
           streetViewControl={false}
-          fullscreenControl={true}>
-          {markerPosition && <Marker position={markerPosition} />}
+          fullscreenControl={true}
+          mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID'}>
+          {markerPosition && <AdvancedMarker position={markerPosition} />}
         </Map>
       </div>
     </APIProvider>

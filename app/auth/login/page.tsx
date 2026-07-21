@@ -7,12 +7,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEnvelope, faLock, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faLock, faSpinner, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -65,7 +66,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" loading="eager" priority />
+          <Image src="/logo.png" alt="ZniyerBuy" width={100} height={100} className="w-20 h-20 sm:w-24 sm:h-24" style={{ width: 'auto', height: 'auto' }} loading="eager" priority />
           <h1 className="text-2xl sm:text-3xl font-extrabold mt-3 tracking-wide">
             <span style={{ color: '#E84E0F' }}>ZNIYER</span>
             <span style={{ color: '#2A7F8A' }}> BuY</span>
@@ -109,15 +110,26 @@ export default function LoginPage() {
                 <FontAwesomeIcon icon={faLock} />
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 transition"
-                style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A7F8A' }}
-                placeholder="••••••••"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg px-4 py-3 pr-12 text-white focus:outline-none focus:ring-2 transition"
+                  style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A7F8A' }}
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2"
+                  style={{ color: '#888888' }}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                  <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                </button>
+              </div>
             </div>
 
             <button

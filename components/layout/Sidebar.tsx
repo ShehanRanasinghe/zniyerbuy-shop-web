@@ -4,6 +4,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -43,6 +44,7 @@ const menuItems: { label: string; href: string; icon: IconDefinition }[] = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Sign out from Firebase and clear local storage, then redirect to login
   const handleLogout = async () => {
@@ -55,11 +57,13 @@ export default function Sidebar() {
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to logout');
+    } finally {
+      setShowLogoutConfirm(false);
     }
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-70 flex flex-col bg-black border-r border-[#222] z-50 hidden lg:flex">
+    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-black border-r border-[#222] z-50 hidden lg:flex">
       {/* Brand logo and app name */}
       <div className="flex flex-col items-center py-5 border-b border-[#222]">
         <div className="w-full flex justify-center">
@@ -100,12 +104,39 @@ export default function Sidebar() {
       {/* Logout button */}
       <div className="p-4 border-t border-[#222]">
         <button
-          onClick={handleLogout}
+          onClick={() => setShowLogoutConfirm(true)}
           className="w-full bg-[#111] text-white rounded-2xl py-4 hover:bg-[#161616] transition flex items-center justify-center gap-2">
           <FontAwesomeIcon icon={faSignOutAlt} />
           <span>Logout</span>
         </button>
       </div>
+
+      {/* Logout confirmation pop-up */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <div className="rounded-2xl p-6 w-full max-w-sm" style={{ backgroundColor: '#111111', border: '1px solid #222222' }}>
+            <h3 className="text-lg font-bold text-white mb-2">Log out?</h3>
+            <p className="text-sm mb-6" style={{ color: '#888888' }}>
+              Are you sure you want to log out of your account?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 px-4 py-3 rounded-xl font-semibold transition"
+                style={{ backgroundColor: '#1A1A1A', color: '#888888', border: '1px solid #333333' }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-4 py-3 rounded-xl font-semibold text-white transition hover:opacity-90 flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#E84E0F' }}>
+                <FontAwesomeIcon icon={faSignOutAlt} />
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

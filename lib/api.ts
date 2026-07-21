@@ -108,4 +108,21 @@ export const ordersAPI = {
   updateOrder: (orderId: string, data: Record<string, unknown>) => api.patch(`/orders/${orderId}`, data),
 };
 
+export const uploadAPI = {
+  uploadProductImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/uploads/product-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  uploadShopImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/uploads/shop-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+};
+
 export default api;
