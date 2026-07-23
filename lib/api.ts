@@ -87,6 +87,12 @@ export const analyticsAPI = {
   getSellerPerformance: () => api.get('/analytics/seller/performance'),
 };
 
+// AI API endpoints - zniyerbuy-ai-module, proxied through the backend
+export const aiAPI = {
+  // Live next-month predictions for one shop (revenue, daily revenue, expected users, top category, daily revenue forecast, category sales prediction). Backend verifies the caller owns shopId before proxying to the AI module.
+  getShopPredictions: (shopId: string) => api.get(`/ai/predictions/shop/${shopId}`),
+};
+
 // Auth API endpoints
 export const authAPI = {
   register: (data: Record<string, unknown>) => api.post('/auth/register', data),
