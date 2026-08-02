@@ -298,18 +298,15 @@ export default function ProfilePage() {
       setSaving(true);
 
       const shopId = localStorage.getItem('shopId');
-      if (shopId) {
-        // Deactivate shop instead of deleting
-        await shopAPI.updateShop(shopId, { status: 'inactive' });
-      }
+      await Promise.all([
+        authAPI.updateProfile({ is_active: false }),          // <-- new: actually blocks login
+        shopId ? shopAPI.updateShop(shopId, { status: 'inactive' }) : Promise.resolve(),
+      ]);
 
       toast.success('Account deactivated successfully');
       setShowDeleteModal(false);
 
-      // Logout after deactivation
-      setTimeout(() => {
-        handleLogout();
-      }, 1500);
+      setTimeout(() => handleLogout(), 1500);
 
     } catch (error) {
       console.error('Error deactivating account:', error);
