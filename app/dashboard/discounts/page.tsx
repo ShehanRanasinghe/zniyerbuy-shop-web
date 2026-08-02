@@ -32,7 +32,16 @@ export default function DiscountsPage() {
   const fetchDeals = async () => {
     try {
       setLoading(true);
-      const response = await dealAPI.getDeals();
+      // FIX APPLIED: GET /deals returns every shop's deals unless a
+      // shop_id filter is passed (see discounts.controller.js
+      // getDiscounts - it's deliberately unfiltered by default for the
+      // customer-facing mobile app). This page previously called
+      // dealAPI.getDeals() with no params at all, so sellers were seeing
+      // every other shop's promotions and deals mixed in with their own.
+      // Same shopId-from-localStorage pattern already used correctly in
+      // app/dashboard/inventory/page.tsx.
+      const shopId = localStorage.getItem('shopId');
+      const response = await dealAPI.getDeals(shopId ? { shop_id: shopId } : {});
       if (response.data.success) {
         setDeals(response.data.data);
       }
