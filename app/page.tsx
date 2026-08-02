@@ -94,7 +94,7 @@ export default function HomePage() {
         style={{ backgroundColor: 'rgba(255,252,247,0.9)', borderBottom: `1px solid ${COLORS.line}` }}
       >
         <div className="flex items-center gap-3">
-          <Image src="/logo.png" alt="ZniyerBuy" width={42} height={42} />
+          <Image src="/logo.png" alt="ZniyerBuy" width={42} height={42} style={{ width: 'auto', height: 'auto' }} />
           <h1 className="text-xl font-extrabold tracking-wide">
             <span style={{ color: COLORS.orange }}>ZNIYER</span>
             <span style={{ color: COLORS.teal }}> BuY</span>
@@ -186,7 +186,7 @@ export default function HomePage() {
             <div className="relative w-full max-w-[440px]">
               <div className="blob-shape relative bg-white text-center px-8 py-12"
                 style={{ border: `1.5px solid ${COLORS.line}`, boxShadow: '0 30px 60px -30px rgba(28,27,46,0.25)' }}>
-                <Image src="/logo.png" alt="ZniyerBuy" width={90} height={90} className="mx-auto" />
+                <Image src="/logo.png" alt="ZniyerBuy" width={90} height={90} className="mx-auto" style={{ width: 'auto', height: 'auto' }} />
                 <h2 className="text-xl font-extrabold mt-3">
                   <span style={{ color: COLORS.orange }}>ZNIYER</span>
                   <span style={{ color: COLORS.teal }}> BuY</span>
@@ -199,7 +199,7 @@ export default function HomePage() {
 
                 {/* driving mini logo */}
                 <div className="drive-cart w-14 mx-auto -mt-10">
-                  <Image src="/logo.png" alt="" width={56} height={56} />
+                  <Image src="/logo.png" alt="" width={56} height={56} style={{ width: 'auto', height: 'auto' }} />
                 </div>
               </div>
 
@@ -457,7 +457,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center gap-3 mb-4">
-                <Image src="/logo.png" alt="ZniyerBuy" width={40} height={40} />
+                <Image src="/logo.png" alt="ZniyerBuy" width={40} height={40} style={{ width: 'auto', height: 'auto' }} />
                 <h1 className="text-xl font-extrabold">
                   <span style={{ color: COLORS.orange }}>ZNIYER</span>
                   <span style={{ color: COLORS.teal }}> BuY</span>
