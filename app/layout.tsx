@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <Toaster
           position="top-right"
           toastOptions={{

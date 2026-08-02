@@ -14,6 +14,17 @@ import toast from 'react-hot-toast';
 import { ordersAPI } from '@/lib/api';
 import axios from 'axios';
 
+interface OrderItem {
+  id: string;
+  product_id: string;
+  discount_id: string | null;
+  product_name: string;
+  unit_price: number;
+  original_price: number | null;
+  quantity: number;
+  line_total: number;
+}
+
 interface Order {
   id: string;
   order_number: string;
@@ -28,6 +39,7 @@ interface Order {
   items_count: number;
   invoice_sent: boolean;
   created_at: string;
+  order_items?: OrderItem[];
 }
 
 export default function OrderDetailsPage() {
@@ -349,13 +361,41 @@ export default function OrderDetailsPage() {
           </div>
         </div>
 
-        {/* Items count — no per-line item breakdown is stored yet, only a count */}
+        {/* Items — full product breakdown, falling back to a plain count
+            if order_items is unexpectedly empty (e.g. a legacy order). */}
         <div className="mt-6">
           <h3 className="text-lg font-bold text-white mb-4">Order Items</h3>
-          <div className="rounded-lg p-4 flex items-center gap-3" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
-            <FontAwesomeIcon icon={faBox} style={{ color: '#888888' }} />
-            <p className="text-white font-semibold">{order.items_count} item{order.items_count === 1 ? '' : 's'} in this order</p>
-          </div>
+          {order.order_items && order.order_items.length > 0 ? (
+            <div className="space-y-2">
+              {order.order_items.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-lg p-4 flex items-center justify-between gap-3"
+                  style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
+                  <div className="flex items-center gap-3">
+                    <FontAwesomeIcon icon={faBox} style={{ color: '#888888' }} />
+                    <div>
+                      <p className="text-white font-semibold">{item.product_name}</p>
+                      <p className="text-sm" style={{ color: '#888888' }}>
+                        Qty {item.quantity} × Rs. {item.unit_price.toLocaleString()}
+                        {item.discount_id && (
+                          <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: '#E84E0F20', color: '#E84E0F' }}>
+                            Deal
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-white font-bold">Rs. {item.line_total.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg p-4 flex items-center gap-3" style={{ backgroundColor: '#1A1A1A', border: '1px solid #333333' }}>
+              <FontAwesomeIcon icon={faBox} style={{ color: '#888888' }} />
+              <p className="text-white font-semibold">{order.items_count} item{order.items_count === 1 ? '' : 's'} in this order</p>
+            </div>
+          )}
         </div>
       </div>
 
